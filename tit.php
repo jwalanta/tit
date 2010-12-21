@@ -31,12 +31,12 @@ $SQLITE = "tit.db";
 //
 //	Select which notifications to send 
 
-$NOTIFICATIONS["ISSUE_CREATE"] 		= TRUE;		// issue created
-$NOTIFICATIONS["ISSUE_EDIT"] 		= TRUE;		// issue edited
-$NOTIFICATIONS["ISSUE_DELETE"] 		= TRUE;		// issue deleted
-$NOTIFICATIONS["ISSUE_STATUS"] 		= TRUE;		// issue status change (solved / unsolved)
-$NOTIFICATIONS["ISSUE_PRIORITY"] 	= TRUE;		// issue status change (solved / unsolved)
-$NOTIFICATIONS["COMMENT_CREATE"] 	= TRUE;		// comment post
+$NOTIFY["ISSUE_CREATE"] 	= TRUE;		// issue created
+$NOTIFY["ISSUE_EDIT"] 		= TRUE;		// issue edited
+$NOTIFY["ISSUE_DELETE"] 	= TRUE;		// issue deleted
+$NOTIFY["ISSUE_STATUS"] 	= TRUE;		// issue status change (solved / unsolved)
+$NOTIFY["ISSUE_PRIORITY"] 	= TRUE;		// issue status change (solved / unsolved)
+$NOTIFY["COMMENT_CREATE"] 	= TRUE;		// comment post
 
 
 ///////////////////////////////////////////////////////////////////////
@@ -54,9 +54,9 @@ if (isset($_POST["login"])){
 		$_SESSION['p']=$USERS[$n][1];	// password
 		$_SESSION['e']=$USERS[$n][2];	// email
 		
-		header("Location: $PHP_SELF");
+		header("Location: {$_SERVER['PHP_SELF']}");
 	}
-	else header("Location: $PHP_SELF?loginerror");
+	else header("Location: {$_SERVER['PHP_SELF']}?loginerror");
 }
 
 // check for logout 
@@ -65,10 +65,10 @@ if (isset($_GET['logout'])){
 	$_SESSION['p']='';	// password
 	$_SESSION['e']='';	// email
 	
-	header("Location: $PHP_SELF");	
+	header("Location: {$_SERVER['PHP_SELF']}");	
 }
 
-// check credentials function
+// check credentials, returns -1 if not okay
 function check_credentials($u, $p){
 	global $USERS;
 	
@@ -88,6 +88,7 @@ $login_html = "<html><head><title>Tiny Issue Tracker</title><style>body,input{fo
 			   <label></label><input type='submit' name='login' value='Login' />
 			   </form></body></html>";
 
+// show login page on bad credential
 if (check_credentials($_SESSION['u'], $_SESSION['p'])==-1) die($login_html);
 
 // Check if db exists
@@ -102,10 +103,11 @@ if (isset($_GET["id"])){
 	
 	$id=sqlite_escape_string($_GET['id']);
 	$issue = sqlite_array_query($db, "SELECT id, title, description, user, status, priority, notify_emails, entrytime FROM issues WHERE id='$id'");
-	$comments = sqlite_array_query($db, "SELECT user, description, entrytime FROM comments WHERE issue_id='$id' ORDER BY entrytime DESC");
+	$comments = sqlite_array_query($db, "SELECT id, user, description, entrytime FROM comments WHERE issue_id='$id' ORDER BY entrytime ASC");
 
 }
 
+// if no issue found, go to list mode
 if (count($issue)==0){
 	
 	unset($issue, $comments);
@@ -148,41 +150,44 @@ if (isset($_POST["createissue"])){
 	else
 		$query = "UPDATE issues SET title='$title', description='$description' WHERE id='$id'"; // edit
 
-	if (trim($title)!='') {
+	if (trim($title)!='') {		// title cant be blank
 		@sqlite_query($db, $query);
 		if ($id==''){
 			// created
 			$id=sqlite_last_insert_rowid($db);
-			if ($NOTIFICATIONS["ISSUE_CREATE"]) 
+			if ($NOTIFY["ISSUE_CREATE"]) 
 				notify(	$id,
 						"[$TITLE] New Issue Created",
-						"New Issue Created by {$_SESSION['u']}\r\nTitle: $title\r\nURL: http://{$HTTP_HOST}$PHP_SELF?id=$id");			
+						"New Issue Created by {$_SESSION['u']}\r\nTitle: $title\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$id");			
 		}
 		else{
 			// edited
-			if ($NOTIFICATIONS["ISSUE_EDIT"]) 
+			if ($NOTIFY["ISSUE_EDIT"]) 
 				notify(	$id,
 						"[$TITLE] Issue Edited",
-						"Issue edited by {$_SESSION['u']}\r\nTitle: $title\r\nURL: http://{$HTTP_HOST}$PHP_SELF?id=$id");			
+						"Issue edited by {$_SESSION['u']}\r\nTitle: $title\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$id");			
 		}
 	}
 	
-	header("Location: $PHP_SELF");
+	header("Location: {$_SERVER['PHP_SELF']}");
 
 }
 
 // Delete issue
 if (isset($_GET["deleteissue"])){
 	$id=sqlite_escape_string($_GET['id']);
-	$title=get_title($id);
-	@sqlite_query($db, "DELETE FROM issues WHERE id='$id'");
+	$title=get_col($id,"issues","title");
 	
-	if ($NOTIFICATIONS["ISSUE_DELETE"]) 
-		notify(	$id,
-				"[$TITLE] Issue Deleted",
-				"Issue deleted by {$_SESSION['u']}\r\nTitle: $title");	
-	
-	header("Location: $PHP_SELF");
+	// only the issue creator or admin can delete issue
+	if ($_SESSION['u']=='admin' || $_SESSION['u']==get_col($id,"issues","user")){
+		@sqlite_query($db, "DELETE FROM issues WHERE id='$id'");
+		
+		if ($NOTIFY["ISSUE_DELETE"]) 
+			notify(	$id,
+					"[$TITLE] Issue Deleted",
+					"Issue deleted by {$_SESSION['u']}\r\nTitle: $title");	
+	}
+	header("Location: {$_SERVER['PHP_SELF']}");
 	
 }
 
@@ -192,12 +197,12 @@ if (isset($_GET["changepriority"])){
 	$priority=sqlite_escape_string($_GET['priority']);
 	if ($priority>=1 && $priority<=3) @sqlite_query($db, "UPDATE issues SET priority='$priority' WHERE id='$id'");
 	
-	if ($NOTIFICATIONS["ISSUE_PRIORITY"]) 
+	if ($NOTIFY["ISSUE_PRIORITY"]) 
 		notify(	$id,
 				"[$TITLE] Issue Priority Changed",
-				"Issue Priority changed by {$_SESSION['u']}\r\nTitle: ".get_title($id)."\r\nURL: http://{$HTTP_HOST}$PHP_SELF?id=$id");
+				"Issue Priority changed by {$_SESSION['u']}\r\nTitle: ".get_col($id,"issues","title")."\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$id");
 	
-	header("Location: $PHP_SELF?id=$issue_id");
+	header("Location: {$_SERVER['PHP_SELF']}?id=$issue_id");
 }
 
 // Mark as solved
@@ -205,12 +210,12 @@ if (isset($_POST["marksolved"])){
 	$id=sqlite_escape_string($_POST['id']);
 	@sqlite_query($db, "UPDATE issues SET status='1' WHERE id='$id'");
 	
-	if ($NOTIFICATIONS["ISSUE_STATUS"]) 
+	if ($NOTIFY["ISSUE_STATUS"]) 
 		notify(	$id,
 				"[$TITLE] Issue Marked as Solved",
-				"Issue marked as solved by {$_SESSION['u']}\r\nTitle: ".get_title($id)."\r\nURL: http://{$HTTP_HOST}$PHP_SELF?id=$id");
+				"Issue marked as solved by {$_SESSION['u']}\r\nTitle: ".get_col($id,"issues","title")."\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$id");
 	
-	header("Location: $PHP_SELF");
+	header("Location: {$_SERVER['PHP_SELF']}");
 }
 
 // Mark as unsolved
@@ -218,26 +223,26 @@ if (isset($_POST["markunsolved"])){
 	$id=sqlite_escape_string($_POST['id']);
 	@sqlite_query($db, "UPDATE issues SET status='0' WHERE id='$id'");
 
-	if ($NOTIFICATIONS["ISSUE_STATUS"]) 
+	if ($NOTIFY["ISSUE_STATUS"]) 
 		notify(	$id,
 				"[$TITLE] Issue Marked as Unsolved",
-				"Issue marked as unsolved by {$_SESSION['u']}\r\nTitle: ".get_title($id)."\r\nURL: http://{$HTTP_HOST}$PHP_SELF?id=$id");
+				"Issue marked as unsolved by {$_SESSION['u']}\r\nTitle: ".get_col($id,"issues","title")."\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$id");
 	
-	header("Location: $PHP_SELF");
+	header("Location: {$_SERVER['PHP_SELF']}");
 }
 
 // Unwatch
 if (isset($_POST["unwatch"])){
 	$id=sqlite_escape_string($_POST['id']);
-	unwatch($id);
-	header("Location: $PHP_SELF?id=$id");
+	unwatch($id);	// remove from watch list
+	header("Location: {$_SERVER['PHP_SELF']}?id=$id");
 }
 
 // Watch
 if (isset($_POST["watch"])){
 	$id=sqlite_escape_string($_POST['id']);
-	watch($id);
-	header("Location: $PHP_SELF?id=$id");
+	watch($id);		// add to watch list
+	header("Location: {$_SERVER['PHP_SELF']}?id=$id");
 }
 
 
@@ -254,12 +259,12 @@ if (isset($_POST["createcomment"])){
 		sqlite_query($db, $query);
 	}
 	
-	if ($NOTIFICATIONS["COMMENT_CREATE"]) 
+	if ($NOTIFY["COMMENT_CREATE"]) 
 		notify(	$id,
 				"[$TITLE] New Comment Posted",
-				"New comment posted by {$_SESSION['u']}\r\nTitle: ".get_title($id)."\r\nURL: http://{$HTTP_HOST}$PHP_SELF?id=$issue_id");
+				"New comment posted by {$_SESSION['u']}\r\nTitle: ".get_col($id,"issues","title")."\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$issue_id");
 	
-	header("Location: $PHP_SELF?id=$issue_id");
+	header("Location: {$_SERVER['PHP_SELF']}?id=$issue_id");
 	
 }
 
@@ -267,16 +272,19 @@ if (isset($_POST["createcomment"])){
 if (isset($_GET["deletecomment"])){
 	$id=sqlite_escape_string($_GET['id']);
 	$cid=sqlite_escape_string($_GET['cid']);
-	sqlite_query($db, "DELETE FROM comments WHERE id='$cid'");
 	
-	header("Location: $PHP_SELF?id=$id");
+	// only comment poster or admin can delete comment
+	if ($_SESSION['u']=='admin' || $_SESSION['u']==get_col($cid,"comments","user"))	
+		sqlite_query($db, "DELETE FROM comments WHERE id='$cid'");
+	
+	header("Location: {$_SERVER['PHP_SELF']}?id=$id");
 }
 
-// get title of issue
-function get_title($id){
+// get column from some table with $id
+function get_col($id, $table, $col){
 	global $db;
-	$result = sqlite_array_query($db, "SELECT title FROM issues WHERE id='$id'");
-	return $result[0]['title'];	
+	$result = sqlite_array_query($db, "SELECT $col FROM $table WHERE id='$id'");
+	return $result[0][$col];		
 }
 
 // notify via email
@@ -289,13 +297,9 @@ function notify($id, $subject, $body){
 		global $EMAIL;
 		$headers = "From: $EMAIL" . "\r\n" . 'X-Mailer: PHP/' . phpversion();		
 		
-		fake_mail($to, $subject, $body, $headers);
+		mail($to, $subject, $body, $headers);	// standard php mail, hope it passes spam filter :)
 	}
 	
-}
-
-function fake_mail($to, $subject, $body, $headers){
-	file_put_contents("/tmp/fakemail.txt","$to\n$subject\n$body\n$headers\n----------\n",FILE_APPEND);
 }
 
 // start watching an issue
@@ -315,7 +319,6 @@ function watch($id){
 		
 		sqlite_query($db, "UPDATE issues SET notify_emails='$notify_emails' WHERE id='$id'");
 	}
-	
 }
 
 // unwatch an issue
@@ -333,7 +336,6 @@ function unwatch($id){
 		foreach ($emails as $email){
 			if ($email!=$_SESSION['e'] && $email!='') $final_email_list[] = $email;
 		}
-	
 		$notify_emails = implode(",",$final_email_list);
 		
 		sqlite_query($db, "UPDATE issues SET notify_emails='$notify_emails' WHERE id='$id'");
@@ -361,10 +363,12 @@ function unwatch($id){
 		#create{padding: 15px; background-color: #f2f2f2;}
 		.issue{padding:10px 20px; margin: 10px 0; background-color: #f2f2f2;}
 		.comment{padding:5px 10px 10px 10px; margin: 10px 0; border: 1px solid #ccc;}
+		.comment-meta{color: #666;}
 		.p1, .p1 a{color: red;}
 		.p3, .p3 a{color: #666;}
 		.hide{display:none;}
 		.left{float: left;}
+		.right{float: right;}
 		.clear{clear:both;}
 		
 	</style>
@@ -372,30 +376,27 @@ function unwatch($id){
 <body>
 <div id='container'>
 	<div id="menu">
-		<a href="<?php echo $PHP_SELF; ?>" alt="Active Issues">Active Issues</a> | 
-		<a href="<?php echo $PHP_SELF; ?>?resolved" alt="Resolved Issues">Resolved Issues</a> | 
-		<a href="<?php echo $PHP_SELF; ?>?logout" alt="Logout">Logout [<?php echo $_SESSION['u']; ?>]</a>
+		<a href="<?php echo $_SERVER['PHP_SELF']; ?>" alt="Active Issues">Active Issues</a> | 
+		<a href="<?php echo $_SERVER['PHP_SELF']; ?>?resolved" alt="Resolved Issues">Resolved Issues</a> | 
+		<a href="<?php echo $_SERVER['PHP_SELF']; ?>?logout" alt="Logout">Logout [<?php echo $_SESSION['u']; ?>]</a>
 	</div>
 
 	<h1><?php echo $TITLE; ?></h1>
 
 	<h2><a href="#" onclick="document.getElementById('create').className='';document.getElementById('title').focus();"><?php echo ($issue['id']==''?"Create":"Edit"); ?> Issue</a></h2>
 	<div id="create" class='<?php echo isset($_GET['editissue'])?'':'hide'; ?>'>
-		<a href="#" onclick="document.getElementById('create').className='hide';" style="float: right;">Close</a>
+		<a href="#" onclick="document.getElementById('create').className='hide';" style="float: right;">[Close]</a>
 		<form method="POST">
 			<input type="hidden" name="id" value="<?php echo $issue['id']; ?>" />
-			<label>Title</label>
-			<input type="text" size="50" name="title" id="title" value="<?php echo stripslashes($issue['title']); ?>" /> 
-			<label>Description</label>
-			<textarea name="description" rows="5" cols="50"><?php echo stripslashes($issue['description']); ?></textarea>
-			<label></label>
-			<input type="submit" name="createissue" value="<?php echo ($issue['id']==''?"Create":"Edit"); ?>" />
+			<label>Title</label><input type="text" size="50" name="title" id="title" value="<?php echo stripslashes($issue['title']); ?>" /> 
+			<label>Description</label><textarea name="description" rows="5" cols="50"><?php echo stripslashes($issue['description']); ?></textarea>
+			<label></label><input type="submit" name="createissue" value="<?php echo ($issue['id']==''?"Create":"Edit"); ?>" />
 		</form>
 	</div>
 	
 	<?php if ($mode=="list"): ?>
 	<div id="list">
-	<h2>Issues</h2>
+	<h2><?php if (isset($_GET['resolved'])) echo "Resolved "; ?>Issues</h2>
 		<table border=1 cellpadding=5 width="100%">
 			<tr>
 				<th width="5%">S.No.</th>
@@ -415,7 +416,9 @@ function unwatch($id){
 				echo "<td>{$issue['user']}</td>\n";
 				echo "<td>{$issue['entrytime']}</td>\n";
 				echo "<td>".(strpos($issue['notify_emails'],$_SESSION['e'])!==FALSE?"✔":"")."</td>\n";
-				echo "<td><a href='?editissue&id={$issue['id']}'>Edit</a> | <a href='?deleteissue&id={$issue['id']}' onclick='return confirm(\"Are you sure?\");'>Delete</a></td>\n";
+				echo "<td><a href='?editissue&id={$issue['id']}'>Edit</a>";
+				if ($_SESSION['u']=='admin' || $_SESSION['u']==$issue['user']) echo " | <a href='?deleteissue&id={$issue['id']}' onclick='return confirm(\"Are you sure?\");'>Delete</a>";
+				echo "</td>\n";
 				echo "</tr>\n";
 			}
 			
@@ -432,7 +435,7 @@ function unwatch($id){
 			<p><?php echo str_replace("\n","<br />",htmlentities(stripslashes($issue['description']))); ?></p>
 		</div>
 		<div class='left'>
-			Priority <select name="priority" onchange="location='<?php echo $PHP_SELF; ?>?changepriority&id=<?php echo $issue['id']; ?>&priority='+this.value">
+			Priority <select name="priority" onchange="location='<?php echo $_SERVER['PHP_SELF']; ?>?changepriority&id=<?php echo $issue['id']; ?>&priority='+this.value">
 				<option value="1"<?php echo ($issue['priority']==1?"selected":""); ?>>High</option>
 				<option value="2"<?php echo ($issue['priority']==2?"selected":""); ?>>Medium</option>
 				<option value="3"<?php echo ($issue['priority']==3?"selected":""); ?>>Low</option>
@@ -455,6 +458,15 @@ function unwatch($id){
 		<div class='clear'></div>
 		
 		<div id="comments">
+			<?php
+			if (count($comments)>0) echo "<h3>Comments</h3>\n";
+			foreach ($comments as $comment){
+				echo "<div class='comment'><p>".str_replace("\n","<br />",htmlentities(stripslashes($comment['description'])))."</p>";
+				echo "<div class='comment-meta'><em>{$comment['user']}</em> on <em>{$comment['entrytime']}</em> ";
+				if ($_SESSION['u']=='admin' || $_SESSION['u']==$comment['user']) echo "<span class='right'><a href='{$_SERVER['PHP_SELF']}?deletecomment&id={$issue['id']}&cid={$comment['id']}' onclick='return confirm(\"Are you sure?\");'>Delete</a></span>";
+				echo "</div></div>\n";
+			}
+			?>
 			<div id="comment-create">
 				<h4>Post a comment</h4>
 				<form method="POST">
@@ -464,21 +476,9 @@ function unwatch($id){
 					<input type="submit" name="createcomment" value="Comment" />
 				</form>			
 			</div>		
-			<?php
-			if (count($comments)>0) echo "<h3>Comments</h3>\n";
-			foreach ($comments as $comment){
-				echo "<div class='comment'><p>".str_replace("\n","<br />",htmlentities(stripslashes($comment['description'])))."</p><div><em>{$comment['user']}</em> on <em>{$comment['entrytime']}</em></div></div>\n";
-			}
-				
-			?>
-
-		
-		
 		</div>
-	
 	</div>
 	<?php endif; ?>
-	
 	<div id="footer">
 		Powered by <a href="https://github.com/jwalanta/tit" alt="Tiny Issue Tracker" target="_blank">Tiny Issue Tracker</a>
 	</div>
