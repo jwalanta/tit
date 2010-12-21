@@ -436,8 +436,8 @@ function unwatch($id){
 	<?php if ($mode=="issue"): ?>	
 	<div id="show">
 		<div class="issue">
-			<h2><?php echo htmlentities(stripslashes($issue['title'])); ?></h2>
-			<p><?php echo str_replace("\n","<br />",htmlentities(stripslashes($issue['description']))); ?></p>
+			<h2><?php echo htmlentities(stripslashes($issue['title']),ENT_COMPAT,"UTF-8"); ?></h2>
+			<p><?php echo str_replace("\n","<br />",htmlentities(stripslashes($issue['description']),ENT_COMPAT,"UTF-8")); ?></p>
 		</div>
 		<div class='left'>
 			Priority <select name="priority" onchange="location='<?php echo $_SERVER['PHP_SELF']; ?>?changepriority&id=<?php echo $issue['id']; ?>&priority='+this.value">
@@ -466,7 +466,7 @@ function unwatch($id){
 			<?php
 			if (count($comments)>0) echo "<h3>Comments</h3>\n";
 			foreach ($comments as $comment){
-				echo "<div class='comment'><p>".str_replace("\n","<br />",htmlentities(stripslashes($comment['description'])))."</p>";
+				echo "<div class='comment'><p>".str_replace("\n","<br />",htmlentities(stripslashes($comment['description']),ENT_COMPAT,"UTF-8"))."</p>";
 				echo "<div class='comment-meta'><em>{$comment['user']}</em> on <em>{$comment['entrytime']}</em> ";
 				if ($_SESSION['u']=='admin' || $_SESSION['u']==$comment['user']) echo "<span class='right'><a href='{$_SERVER['PHP_SELF']}?deletecomment&id={$issue['id']}&cid={$comment['id']}' onclick='return confirm(\"Are you sure?\");'>Delete</a></span>";
 				echo "</div></div>\n";
