@@ -1,0 +1,17 @@
+Tiny Issue Tracker
+------------------
+
+Tiny Issue Tracker (TIT) is PHP/SQLite based, one-file issue tracker. 
+
+Features:
+ - Lightweight, <10KB of PHP code
+ - Multi-user
+ - Email notification
+ - Auto DB creation on first run
+ - Issue Priority (High, Medium, Low)
+
+Installation:
+ - Modify configuration in the file (tit.php)
+ - Upload the file to webserver (rename if necessary)
+ - Load file from browser 
+   (DB will be created automatically on first run)
