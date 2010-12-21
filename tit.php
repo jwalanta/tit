@@ -191,7 +191,7 @@ if (isset($_GET["changepriority"])){
 				"[$TITLE] Issue Priority Changed",
 				"Issue Priority changed by {$_SESSION['u']}\r\nTitle: ".get_col($id,"issues","title")."\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$id");
 	
-	header("Location: {$_SERVER['PHP_SELF']}?id=$issue_id");
+	header("Location: {$_SERVER['PHP_SELF']}?id=$id");
 }
 
 // Mark as solved
