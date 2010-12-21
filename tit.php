@@ -68,18 +68,6 @@ if (isset($_GET['logout'])){
 	header("Location: {$_SERVER['PHP_SELF']}");	
 }
 
-// check credentials, returns -1 if not okay
-function check_credentials($u, $p){
-	global $USERS;
-	
-	$n=0;
-	foreach ($USERS as $user){
-		if ($user[0]==$u && $user[1]==$p) return $n;
-		$n++;
-	}
-	return -1;
-}
-
 if (isset($_GET['loginerror'])) $message = "Invalid username or password";
 $login_html = "<html><head><title>Tiny Issue Tracker</title><style>body,input{font-family:sans-serif;font-size:11px;} label{display:block;}</style></head>
 			   <body><h2>$TITLE - Issue Tracker</h2><p>$message</p><form method='POST'>
@@ -278,6 +266,22 @@ if (isset($_GET["deletecomment"])){
 		sqlite_query($db, "DELETE FROM comments WHERE id='$cid'");
 	
 	header("Location: {$_SERVER['PHP_SELF']}?id=$id");
+}
+
+//
+// 	FUNCTIONS 
+//
+
+// check credentials, returns -1 if not okay
+function check_credentials($u, $p){
+	global $USERS;
+	
+	$n=0;
+	foreach ($USERS as $user){
+		if ($user[0]==$u && $user[1]==$p) return $n;
+		$n++;
+	}
+	return -1;
 }
 
 // get column from some table with $id
