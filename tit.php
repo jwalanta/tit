@@ -169,6 +169,7 @@ if (isset($_GET["deleteissue"])){
 	// only the issue creator or admin can delete issue
 	if ($_SESSION['u']=='admin' || $_SESSION['u']==get_col($id,"issues","user")){
 		@sqlite_query($db, "DELETE FROM issues WHERE id='$id'");
+		@sqlite_query($db, "DELETE FROM comments WHERE issue_id='$id'");
 		
 		if ($NOTIFY["ISSUE_DELETE"]) 
 			notify(	$id,
@@ -421,7 +422,7 @@ function unwatch($id){
 				echo "<td>{$issue['entrytime']}</td>\n";
 				echo "<td>".(strpos($issue['notify_emails'],$_SESSION['e'])!==FALSE?"✔":"")."</td>\n";
 				echo "<td><a href='?editissue&id={$issue['id']}'>Edit</a>";
-				if ($_SESSION['u']=='admin' || $_SESSION['u']==$issue['user']) echo " | <a href='?deleteissue&id={$issue['id']}' onclick='return confirm(\"Are you sure?\");'>Delete</a>";
+				if ($_SESSION['u']=='admin' || $_SESSION['u']==$issue['user']) echo " | <a href='?deleteissue&id={$issue['id']}' onclick='return confirm(\"Are you sure? All comments will be deleted too.\");'>Delete</a>";
 				echo "</td>\n";
 				echo "</tr>\n";
 			}
