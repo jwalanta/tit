@@ -1,43 +1,42 @@
 <?php
 /*
  *      Tiny Issue Tracker (TIT) v0.1
- * 		SQLite based, single file Issue Tracker
- * 
+ *      SQLite based, single file Issue Tracker
+ *      
  *      Copyright 2010 Jwalanta Shrestha <jwalanta at gmail dot com>
- * 		GNU GPL
+ *      GNU GPL
  */
 
 ///////////////////
 // CONFIGURATION //
 ///////////////////
 
-$TITLE = "My Project";				// Project Title
-$EMAIL = "noreply@example.com";	// "From" email address for notifications
+$TITLE = "My Project";              // Project Title
+$EMAIL = "noreply@example.com";     // "From" email address for notifications
 
 
-//	Array of users. Format: array("username","md5_password","email")
-//	Note: "admin" user has special powers
-//	Leave email blank to disable notifications for that user.
+//  Array of users. Format: array("username","md5_password","email")
+//  Note: "admin" user has special powers
+//  Leave email blank to disable notifications for that user.
 
-$USERS = array(	array("admin",md5("admin"),"admin@example.com"),
-				array("user",md5("user"),"user@example.com")
-			  );
+$USERS = array( array("admin",md5("admin"),"admin@example.com"),
+                array("user",md5("user"),"user@example.com")
+              );
 
-//	Location of SQLITE db file
-//	(If the file doesn't exist, a new one will be created.
-//	Make sure the folder is writable)
+//  Location of SQLITE db file
+//  (If the file doesn't exist, a new one will be created.
+//  Make sure the folder is writable)
 
 $SQLITE = "tit.db";
 
-//
-//	Select which notifications to send 
+// Select which notifications to send
 
-$NOTIFY["ISSUE_CREATE"] 	= TRUE;		// issue created
-$NOTIFY["ISSUE_EDIT"] 		= TRUE;		// issue edited
-$NOTIFY["ISSUE_DELETE"] 	= TRUE;		// issue deleted
-$NOTIFY["ISSUE_STATUS"] 	= TRUE;		// issue status change (solved / unsolved)
-$NOTIFY["ISSUE_PRIORITY"] 	= TRUE;		// issue status change (solved / unsolved)
-$NOTIFY["COMMENT_CREATE"] 	= TRUE;		// comment post
+$NOTIFY["ISSUE_CREATE"]     = TRUE;     // issue created
+$NOTIFY["ISSUE_EDIT"]       = TRUE;     // issue edited
+$NOTIFY["ISSUE_DELETE"]     = TRUE;     // issue deleted
+$NOTIFY["ISSUE_STATUS"]     = TRUE;     // issue status change (solved / unsolved)
+$NOTIFY["ISSUE_PRIORITY"]   = TRUE;     // issue status change (solved / unsolved)
+$NOTIFY["COMMENT_CREATE"]   = TRUE;     // comment post
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -51,31 +50,31 @@ session_start();
 if (isset($_POST["login"])){
 	$n = check_credentials($_POST["u"],md5($_POST["p"]));
 	if ($n>=0){
-		$_SESSION['u']=$USERS[$n][0];	// username
-		$_SESSION['p']=$USERS[$n][1];	// password
-		$_SESSION['e']=$USERS[$n][2];	// email
+		$_SESSION['u']=$USERS[$n][0];   // username
+		$_SESSION['p']=$USERS[$n][1];   // password
+		$_SESSION['e']=$USERS[$n][2];   // email
 		
 		header("Location: {$_SERVER['PHP_SELF']}");
 	}
 	else header("Location: {$_SERVER['PHP_SELF']}?loginerror");
 }
 
-// check for logout 
+// check for logout
 if (isset($_GET['logout'])){
-	$_SESSION['u']='';	// username
-	$_SESSION['p']='';	// password
-	$_SESSION['e']='';	// email
+	$_SESSION['u']='';  // username
+	$_SESSION['p']='';  // password
+	$_SESSION['e']='';  // email
 	
-	header("Location: {$_SERVER['PHP_SELF']}");	
+	header("Location: {$_SERVER['PHP_SELF']}");
 }
 
 if (isset($_GET['loginerror'])) $message = "Invalid username or password";
 $login_html = "<html><head><title>Tiny Issue Tracker</title><style>body,input{font-family:sans-serif;font-size:11px;} label{display:block;}</style></head>
-			   <body><h2>$TITLE - Issue Tracker</h2><p>$message</p><form method='POST'>
-			   <label>Username</label><input type='text' name='u' />
-			   <label>Password</label><input type='password' name='p' />
-			   <label></label><input type='submit' name='login' value='Login' />
-			   </form></body></html>";
+               <body><h2>$TITLE - Issue Tracker</h2><p>$message</p><form method='POST'>
+               <label>Username</label><input type='text' name='u' />
+               <label>Password</label><input type='password' name='p' />
+               <label></label><input type='submit' name='login' value='Login' />
+               </form></body></html>";
 
 // show login page on bad credential
 if (check_credentials($_SESSION['u'], $_SESSION['p'])==-1) die($login_html);
@@ -101,10 +100,10 @@ if (count($issue)==0){
 	
 	unset($issue, $comments);
 	// show all issues
-
-	if (isset($_GET["resolved"])) 
+	
+	if (isset($_GET["resolved"]))
 		$issues = sqlite_array_query($db, "SELECT id, title, description, user, status, priority, notify_emails, entrytime FROM issues WHERE status=1 ORDER BY priority, entrytime DESC");
-	else 
+	else
 		$issues = sqlite_array_query($db, "SELECT id, title, description, user, status, priority, notify_emails, entrytime FROM issues WHERE (status=0 OR status IS NULL) ORDER BY priority, entrytime DESC");
 	
 	$mode="list";
@@ -138,23 +137,23 @@ if (isset($_POST["createissue"])){
 		$query = "INSERT INTO issues (title, description, user, priority, notify_emails, entrytime) values('$title','$description','$user','2','$notify_emails','$now')"; // create
 	else
 		$query = "UPDATE issues SET title='$title', description='$description' WHERE id='$id'"; // edit
-
-	if (trim($title)!='') {		// title cant be blank
+	
+	if (trim($title)!='') {     // title cant be blank
 		@sqlite_query($db, $query);
 		if ($id==''){
 			// created
 			$id=sqlite_last_insert_rowid($db);
-			if ($NOTIFY["ISSUE_CREATE"]) 
-				notify(	$id,
-						"[$TITLE] New Issue Created",
-						"New Issue Created by {$_SESSION['u']}\r\nTitle: $title\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$id");			
+			if ($NOTIFY["ISSUE_CREATE"])
+				notify( $id,
+				        "[$TITLE] New Issue Created",
+				        "New Issue Created by {$_SESSION['u']}\r\nTitle: $title\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$id");
 		}
 		else{
 			// edited
-			if ($NOTIFY["ISSUE_EDIT"]) 
-				notify(	$id,
-						"[$TITLE] Issue Edited",
-						"Issue edited by {$_SESSION['u']}\r\nTitle: $title\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$id");			
+			if ($NOTIFY["ISSUE_EDIT"])
+				notify( $id,
+				        "[$TITLE] Issue Edited",
+				        "Issue edited by {$_SESSION['u']}\r\nTitle: $title\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$id");
 		}
 	}
 	
@@ -172,10 +171,10 @@ if (isset($_GET["deleteissue"])){
 		@sqlite_query($db, "DELETE FROM issues WHERE id='$id'");
 		@sqlite_query($db, "DELETE FROM comments WHERE issue_id='$id'");
 		
-		if ($NOTIFY["ISSUE_DELETE"]) 
-			notify(	$id,
-					"[$TITLE] Issue Deleted",
-					"Issue deleted by {$_SESSION['u']}\r\nTitle: $title");	
+		if ($NOTIFY["ISSUE_DELETE"])
+			notify( $id,
+			        "[$TITLE] Issue Deleted",
+			        "Issue deleted by {$_SESSION['u']}\r\nTitle: $title");
 	}
 	header("Location: {$_SERVER['PHP_SELF']}");
 	
@@ -187,10 +186,10 @@ if (isset($_GET["changepriority"])){
 	$priority=sqlite_escape_string($_GET['priority']);
 	if ($priority>=1 && $priority<=3) @sqlite_query($db, "UPDATE issues SET priority='$priority' WHERE id='$id'");
 	
-	if ($NOTIFY["ISSUE_PRIORITY"]) 
-		notify(	$id,
-				"[$TITLE] Issue Priority Changed",
-				"Issue Priority changed by {$_SESSION['u']}\r\nTitle: ".get_col($id,"issues","title")."\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$id");
+	if ($NOTIFY["ISSUE_PRIORITY"])
+		notify( $id,
+		        "[$TITLE] Issue Priority Changed",
+		        "Issue Priority changed by {$_SESSION['u']}\r\nTitle: ".get_col($id,"issues","title")."\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$id");
 	
 	header("Location: {$_SERVER['PHP_SELF']}?id=$id");
 }
@@ -200,10 +199,10 @@ if (isset($_POST["marksolved"])){
 	$id=sqlite_escape_string($_POST['id']);
 	@sqlite_query($db, "UPDATE issues SET status='1' WHERE id='$id'");
 	
-	if ($NOTIFY["ISSUE_STATUS"]) 
-		notify(	$id,
-				"[$TITLE] Issue Marked as Solved",
-				"Issue marked as solved by {$_SESSION['u']}\r\nTitle: ".get_col($id,"issues","title")."\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$id");
+	if ($NOTIFY["ISSUE_STATUS"])
+		notify( $id,
+		        "[$TITLE] Issue Marked as Solved",
+		        "Issue marked as solved by {$_SESSION['u']}\r\nTitle: ".get_col($id,"issues","title")."\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$id");
 	
 	header("Location: {$_SERVER['PHP_SELF']}");
 }
@@ -212,11 +211,11 @@ if (isset($_POST["marksolved"])){
 if (isset($_POST["markunsolved"])){
 	$id=sqlite_escape_string($_POST['id']);
 	@sqlite_query($db, "UPDATE issues SET status='0' WHERE id='$id'");
-
-	if ($NOTIFY["ISSUE_STATUS"]) 
-		notify(	$id,
-				"[$TITLE] Issue Marked as Unsolved",
-				"Issue marked as unsolved by {$_SESSION['u']}\r\nTitle: ".get_col($id,"issues","title")."\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$id");
+	
+	if ($NOTIFY["ISSUE_STATUS"])
+		notify( $id,
+		        "[$TITLE] Issue Marked as Unsolved",
+		        "Issue marked as unsolved by {$_SESSION['u']}\r\nTitle: ".get_col($id,"issues","title")."\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$id");
 	
 	header("Location: {$_SERVER['PHP_SELF']}");
 }
@@ -224,35 +223,35 @@ if (isset($_POST["markunsolved"])){
 // Unwatch
 if (isset($_POST["unwatch"])){
 	$id=sqlite_escape_string($_POST['id']);
-	unwatch($id);	// remove from watch list
+	unwatch($id);       // remove from watch list
 	header("Location: {$_SERVER['PHP_SELF']}?id=$id");
 }
 
 // Watch
 if (isset($_POST["watch"])){
 	$id=sqlite_escape_string($_POST['id']);
-	watch($id);		// add to watch list
+	watch($id);         // add to watch list
 	header("Location: {$_SERVER['PHP_SELF']}?id=$id");
 }
 
 
 // Create Comment
 if (isset($_POST["createcomment"])){
-
+	
 	$issue_id=sqlite_escape_string($_POST['issue_id']);
 	$description=sqlite_escape_string($_POST['description']);
 	$user=$_SESSION['u'];
-	$now=date("Y-m-d H:i:s");	
+	$now=date("Y-m-d H:i:s");
 	
 	if (trim($description)!=''){
 		$query = "INSERT INTO comments (issue_id, description, user, entrytime) values('$issue_id','$description','$user','$now')"; // create
 		sqlite_query($db, $query);
 	}
 	
-	if ($NOTIFY["COMMENT_CREATE"]) 
-		notify(	$id,
-				"[$TITLE] New Comment Posted",
-				"New comment posted by {$_SESSION['u']}\r\nTitle: ".get_col($id,"issues","title")."\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$issue_id");
+	if ($NOTIFY["COMMENT_CREATE"])
+		notify( $id,
+		        "[$TITLE] New Comment Posted",
+		        "New comment posted by {$_SESSION['u']}\r\nTitle: ".get_col($id,"issues","title")."\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$issue_id");
 	
 	header("Location: {$_SERVER['PHP_SELF']}?id=$issue_id");
 	
@@ -264,14 +263,14 @@ if (isset($_GET["deletecomment"])){
 	$cid=sqlite_escape_string($_GET['cid']);
 	
 	// only comment poster or admin can delete comment
-	if ($_SESSION['u']=='admin' || $_SESSION['u']==get_col($cid,"comments","user"))	
+	if ($_SESSION['u']=='admin' || $_SESSION['u']==get_col($cid,"comments","user"))
 		sqlite_query($db, "DELETE FROM comments WHERE id='$cid'");
 	
 	header("Location: {$_SERVER['PHP_SELF']}?id=$id");
 }
 
 //
-// 	FUNCTIONS 
+//      FUNCTIONS
 //
 
 // check credentials, returns -1 if not okay
@@ -290,7 +289,7 @@ function check_credentials($u, $p){
 function get_col($id, $table, $col){
 	global $db;
 	$result = sqlite_array_query($db, "SELECT $col FROM $table WHERE id='$id'");
-	return $result[0][$col];		
+	return $result[0][$col];
 }
 
 // notify via email
@@ -301,9 +300,9 @@ function notify($id, $subject, $body){
 	
 	if ($to!=''){
 		global $EMAIL;
-		$headers = "From: $EMAIL" . "\r\n" . 'X-Mailer: PHP/' . phpversion();		
+		$headers = "From: $EMAIL" . "\r\n" . 'X-Mailer: PHP/' . phpversion();
 		
-		mail($to, $subject, $body, $headers);	// standard php mail, hope it passes spam filter :)
+		mail($to, $subject, $body, $headers);       // standard php mail, hope it passes spam filter :)
 	}
 	
 }
@@ -345,7 +344,7 @@ function unwatch($id){
 		$notify_emails = implode(",",$final_email_list);
 		
 		sqlite_query($db, "UPDATE issues SET notify_emails='$notify_emails' WHERE id='$id'");
-	}	
+	}
 }
 
 ?>
@@ -382,8 +381,8 @@ function unwatch($id){
 <body>
 <div id='container'>
 	<div id="menu">
-		<a href="<?php echo $_SERVER['PHP_SELF']; ?>" alt="Active Issues">Active Issues</a> | 
-		<a href="<?php echo $_SERVER['PHP_SELF']; ?>?resolved" alt="Resolved Issues">Resolved Issues</a> | 
+		<a href="<?php echo $_SERVER['PHP_SELF']; ?>" alt="Active Issues">Active Issues</a> |
+		<a href="<?php echo $_SERVER['PHP_SELF']; ?>?resolved" alt="Resolved Issues">Resolved Issues</a> |
 		<a href="<?php echo $_SERVER['PHP_SELF']; ?>?logout" alt="Logout">Logout [<?php echo $_SESSION['u']; ?>]</a>
 	</div>
 
@@ -394,7 +393,7 @@ function unwatch($id){
 		<a href="#" onclick="document.getElementById('create').className='hide';" style="float: right;">[Close]</a>
 		<form method="POST">
 			<input type="hidden" name="id" value="<?php echo $issue['id']; ?>" />
-			<label>Title</label><input type="text" size="50" name="title" id="title" value="<?php echo stripslashes($issue['title']); ?>" /> 
+			<label>Title</label><input type="text" size="50" name="title" id="title" value="<?php echo stripslashes($issue['title']); ?>" />
 			<label>Description</label><textarea name="description" rows="5" cols="50"><?php echo stripslashes($issue['description']); ?></textarea>
 			<label></label><input type="submit" name="createissue" value="<?php echo ($issue['id']==''?"Create":"Edit"); ?>" />
 		</form>
@@ -416,8 +415,8 @@ function unwatch($id){
 			<?php
 			$count=1;
 			foreach ($issues as $issue){
-                $count++;
-				echo "<tr class='p{$issue['priority']}'>\n"; 
+				$count++;
+				echo "<tr class='p{$issue['priority']}'>\n";
 				echo "<td>{$issue['id']}</a></td>\n";
 				echo "<td><a href='?id={$issue['id']}'>".htmlentities($issue['title'],ENT_COMPAT,"UTF-8")."</a></td>\n";
 				echo "<td>{$issue['user']}</td>\n";
@@ -430,12 +429,12 @@ function unwatch($id){
 			}
 			
 			?>
-
+		
 		</table>
 	</div>
 	<?php endif; ?>
 	
-	<?php if ($mode=="issue"): ?>	
+	<?php if ($mode=="issue"): ?>
 	<div id="show">
 		<div class="issue">
 			<h2><?php echo htmlentities(stripslashes($issue['title']),ENT_COMPAT,"UTF-8"); ?></h2>
@@ -453,7 +452,7 @@ function unwatch($id){
 			<form method="POST">
 				<input type="hidden" name="id" value="<?php echo $issue['id']; ?>" />
 				<input type="submit" name="mark<?php echo $issue['status']==1?"unsolved":"solved"; ?>" value="Mark as <?php echo $issue['status']==1?"Unsolved":"Solved"; ?>" />
-				<?php 
+				<?php
 					if (strpos($issue['notify_emails'],$_SESSION['e'])===FALSE)
 						echo "<input type='submit' name='watch' value='Watch' />\n";
 					else
@@ -461,7 +460,7 @@ function unwatch($id){
 				
 				?>
 			</form>
-		</div>	
+		</div>
 		<div class='clear'></div>
 		
 		<div id="comments">
@@ -481,8 +480,8 @@ function unwatch($id){
 					<textarea name="description" rows="5" cols="50"></textarea>
 					<label></label>
 					<input type="submit" name="createcomment" value="Comment" />
-				</form>			
-			</div>		
+				</form>
+			</div>
 		</div>
 	</div>
 	<?php endif; ?>
