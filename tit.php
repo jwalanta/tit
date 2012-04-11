@@ -388,7 +388,7 @@ function unwatch($id){
 
 	<h1><?php echo $TITLE; ?></h1>
 
-	<h2><a href="#" onclick="document.getElementById('create').className='';document.getElementById('title').focus();"><?php echo ($issue['id']==''?"Create":"Edit"); ?> Issue</a></h2>
+	<h2><a href="#" onclick="document.getElementById('create').className='';document.getElementById('title').focus();"><?php echo ($issue['id']==''?"Create":"Edit"); ?> Issue <?php echo $issue['id'] ?></a></h2>
 	<div id="create" class='<?php echo isset($_GET['editissue'])?'':'hide'; ?>'>
 		<a href="#" onclick="document.getElementById('create').className='hide';" style="float: right;">[Close]</a>
 		<form method="POST">
@@ -404,7 +404,7 @@ function unwatch($id){
 	<h2><?php if (isset($_GET['resolved'])) echo "Resolved "; ?>Issues</h2>
 		<table border=1 cellpadding=5 width="100%">
 			<tr>
-				<th width="5%">S.No.</th>
+				<th width="5%">ID</th>
 				<th width="40%">Title</th>
 				<th width="15%">Created by</th>
 				<th width="20%">Date</th>
@@ -415,8 +415,9 @@ function unwatch($id){
 			<?php
 			$count=1;
 			foreach ($issues as $issue){
+                $count++;
 				echo "<tr class='p{$issue['priority']}'>\n"; 
-				echo "<td>".$count++."</a></td>\n";
+				echo "<td>{$issue['id']}</a></td>\n";
 				echo "<td><a href='?id={$issue['id']}'>".htmlentities($issue['title'],ENT_COMPAT,"UTF-8")."</a></td>\n";
 				echo "<td>{$issue['user']}</td>\n";
 				echo "<td>{$issue['entrytime']}</td>\n";
