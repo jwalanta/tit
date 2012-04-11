@@ -417,7 +417,7 @@ function unwatch($id){
 			foreach ($issues as $issue){
 				echo "<tr class='p{$issue['priority']}'>\n"; 
 				echo "<td>".$count++."</a></td>\n";
-				echo "<td><a href='?id={$issue['id']}'>{$issue['title']}</a></td>\n";
+				echo "<td><a href='?id={$issue['id']}'>".htmlentities($issue['title'],ENT_COMPAT,"UTF-8")."</a></td>\n";
 				echo "<td>{$issue['user']}</td>\n";
 				echo "<td>{$issue['entrytime']}</td>\n";
 				echo "<td>".(strpos($issue['notify_emails'],$_SESSION['e'])!==FALSE?"✔":"")."</td>\n";
