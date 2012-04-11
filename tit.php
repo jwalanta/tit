@@ -12,14 +12,15 @@
 ///////////////////
 
 $TITLE = "My Project";				// Project Title
-$EMAIL = "noreply@mydomain.com";	// "From" email address for notifications
+$EMAIL = "noreply@example.com";	// "From" email address for notifications
 
 
 //	Array of users. Format: array("username","md5_password","email")
 //	Note: "admin" user has special powers
+//	Leave email blank to disable notifications for that user.
 
-$USERS = array(	array("admin",md5("admin"),"admin@mydomain.com"),
-				array("user",md5("user"),"user@mydomain.com")
+$USERS = array(	array("admin",md5("admin"),"admin@example.com"),
+				array("user",md5("user"),"user@example.com")
 			  );
 
 //	Location of SQLITE db file
@@ -39,9 +40,9 @@ $NOTIFY["ISSUE_PRIORITY"] 	= TRUE;		// issue status change (solved / unsolved)
 $NOTIFY["COMMENT_CREATE"] 	= TRUE;		// comment post
 
 
-///////////////////////////////////////////////////////////////////////
-////// DO NOT EDIT BEYOND THIS IF YOU DONT KNOW WHAT YOU'RE DOING /////
-///////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+////// DO NOT EDIT BEYOND THIS IF YOU DON'T KNOW WHAT YOU'RE DOING /////
+////////////////////////////////////////////////////////////////////////
 
 // Here we go...
 session_start();
