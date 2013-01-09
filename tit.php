@@ -15,9 +15,9 @@ $TITLE = "My Project";              // Project Title
 $EMAIL = "noreply@example.com";     // "From" email address for notifications
 
 
-//  Array of users. Format: array("username","md5_password","email")
-//  Note: "admin" user has special powers
-//  Leave email blank to disable notifications for that user.
+// Array of users.
+// Mandatory fields: username, password (md5 hash)
+// Optional fields: email, admin (true/false)
 
 $USERS = array(
   array("username"=>"admin","password"=>md5("admin"),"email"=>"admin@example.com","admin"=>true),
@@ -472,7 +472,7 @@ function unwatch($id){
 			foreach ($comments as $comment){
 				echo "<div class='comment'><p>".str_replace("\n","<br />",htmlentities(stripslashes($comment['description']),ENT_COMPAT,"UTF-8"))."</p>";
 				echo "<div class='comment-meta'><em>{$comment['user']}</em> on <em>{$comment['entrytime']}</em> ";
-				if ($_SESSION['tit']['username']=='admin' || $_SESSION['tit']['username']==$comment['user']) echo "<span class='right'><a href='{$_SERVER['PHP_SELF']}?deletecomment&id={$issue['id']}&cid={$comment['id']}' onclick='return confirm(\"Are you sure?\");'>Delete</a></span>";
+				if ($_SESSION['tit']['admin'] || $_SESSION['tit']['username']==$comment['user']) echo "<span class='right'><a href='{$_SERVER['PHP_SELF']}?deletecomment&id={$issue['id']}&cid={$comment['id']}' onclick='return confirm(\"Are you sure?\");'>Delete</a></span>";
 				echo "</div></div>\n";
 			}
 			?>
