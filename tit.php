@@ -21,7 +21,7 @@ $EMAIL = "noreply@example.com";     // "From" email address for notifications
 
 $USERS = array(
   array("username"=>"admin","password"=>md5("admin"),"email"=>"admin@example.com","admin"=>true),
-  array("username"=>"user" ,"password"=>md5("user") ,"email"=>"user@example.com" ,"admin"=>true),
+  array("username"=>"user" ,"password"=>md5("user") ,"email"=>"user@example.com"),
 );
 
 //  Location of SQLITE db file
@@ -46,7 +46,7 @@ $NOTIFY["COMMENT_CREATE"]   = TRUE;     // comment post
 
 if (get_magic_quotes_gpc())
 {
-  foreach($_GET as $k=>$v) $_GET[$k] = stripslashes($v);
+  foreach($_GET  as $k=>$v) $_GET [$k] = stripslashes($v);
   foreach($_POST as $k=>$v) $_POST[$k] = stripslashes($v);
 }
 
