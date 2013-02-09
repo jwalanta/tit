@@ -88,8 +88,8 @@ if (check_credentials($_SESSION['u'], $_SESSION['p'])==-1) die($login_html);
 if (!($db = sqlite_open($SQLITE, 0666, $sqliteerror))) die($sqliteerror);
 
 // create tables if not exist
-@sqlite_query($db, 'CREATE TABLE issues (id INTEGER PRIMARY KEY, title TEXT, description TEXT, user TEXT, status INTEGER NOT NULL, priority INTEGER, notify_emails INTEGER, entrytime DATETIME)');
-@sqlite_query($db, 'CREATE TABLE comments (id INTEGER PRIMARY KEY, issue_id INTEGER, user TEXT, description TEXT, entrytime DATETIME)');
+@sqlite_query($db, "CREATE TABLE issues (id INTEGER PRIMARY KEY, title TEXT, description TEXT, user TEXT, status INTEGER NOT NULL DEFAULT '0', priority INTEGER, notify_emails INTEGER, entrytime DATETIME)");
+@sqlite_query($db, "CREATE TABLE comments (id INTEGER PRIMARY KEY, issue_id INTEGER, user TEXT, description TEXT, entrytime DATETIME)");
 
 if (isset($_GET["id"])){
 	// show issue #id
