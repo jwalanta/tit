@@ -170,7 +170,7 @@ if (isset($_GET["deleteissue"])){
 	$title=get_col($id,"issues","title");
 	
 	// only the issue creator or admin can delete issue
-	if ($$_SESSION['tit']['admin'] || $_SESSION['tit']['username']==get_col($id,"issues","user")){
+	if ($_SESSION['tit']['admin'] || $_SESSION['tit']['username']==get_col($id,"issues","user")){
 		@sqlite_query($db, "DELETE FROM issues WHERE id='$id'");
 		@sqlite_query($db, "DELETE FROM comments WHERE issue_id='$id'");
 		
