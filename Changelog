@@ -1,0 +1,7 @@
+Version 2.0 changes
+-----------------
+- DB access using PDO
+- Support for Sqlite3 (via PDO)
+- Flexible issue statuses (by Gargaj, https://github.com/Gargaj)
+- Multiple admin users (by Gargaj)
+- Few cosmetic changes
