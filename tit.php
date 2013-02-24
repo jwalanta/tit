@@ -1,6 +1,6 @@
 <?php
 /*
- *      Tiny Issue Tracker (TIT) v0.1
+ *      Tiny Issue Tracker (TIT) v2.0
  *      SQLite based, single file Issue Tracker
  *      
  *      Copyright 2010-2013 Jwalanta Shrestha <jwalanta at gmail dot com>
@@ -81,18 +81,18 @@ $login_html = "<html><head><title>Tiny Issue Tracker</title><style>body,input{fo
 if (check_credentials($_SESSION['tit']['username'], $_SESSION['tit']['password'])==-1) die($login_html);
 
 // Check if db exists
-if (!($db = sqlite_open($SQLITE, 0666, $sqliteerror))) die($sqliteerror);
+try{$db = new PDO("sqlite:$SQLITE");}
+catch (PDOException $e) {die("DB Connection failed.");}
 
 // create tables if not exist
-@sqlite_query($db, "CREATE TABLE issues (id INTEGER PRIMARY KEY, title TEXT, description TEXT, user TEXT, status INTEGER NOT NULL DEFAULT '0', priority INTEGER, notify_emails INTEGER, entrytime DATETIME)");
-@sqlite_query($db, "CREATE TABLE comments (id INTEGER PRIMARY KEY, issue_id INTEGER, user TEXT, description TEXT, entrytime DATETIME)");
+@$db->exec("CREATE TABLE issues (id INTEGER PRIMARY KEY, title TEXT, description TEXT, user TEXT, status INTEGER NOT NULL DEFAULT '0', priority INTEGER, notify_emails INTEGER, entrytime DATETIME)");
+@$db->exec("CREATE TABLE comments (id INTEGER PRIMARY KEY, issue_id INTEGER, user TEXT, description TEXT, entrytime DATETIME)");
 
 if (isset($_GET["id"])){
 	// show issue #id
-	$id=sqlite_escape_string($_GET['id']);
-	$issue = sqlite_array_query($db, "SELECT id, title, description, user, status, priority, notify_emails, entrytime FROM issues WHERE id='$id'");
-	$comments = sqlite_array_query($db, "SELECT id, user, description, entrytime FROM comments WHERE issue_id='$id' ORDER BY entrytime ASC");
-
+	$id=pdo_escape_string($_GET['id']);
+	$issue = $db->query("SELECT id, title, description, user, status, priority, notify_emails, entrytime FROM issues WHERE id='$id'")->fetchAll();
+	$comments = $db->query("SELECT id, user, description, entrytime FROM comments WHERE issue_id='$id' ORDER BY entrytime ASC")->fetchAll();
 }
 
 // if no issue found, go to list mode
@@ -105,11 +105,11 @@ if (count($issue)==0){
 	if (isset($_GET["status"]))
 	  $status = (int)$_GET["status"];
 
-	$issues = sqlite_array_query($db, 
+	$issues = $db->query(
 	  "SELECT id, title, description, user, status, priority, notify_emails, entrytime ".
 	  " FROM issues ".
-	  " WHERE status=".sqlite_escape_string($status ? $status : "0 or status is null"). // <- this is for legacy purposes only
-	  " ORDER BY priority, entrytime DESC");
+	  " WHERE status=".pdo_escape_string($status ? $status : "0 or status is null"). // <- this is for legacy purposes only
+	  " ORDER BY priority, entrytime DESC")->fetchAll();
 	
 	$mode="list";
 }
@@ -125,10 +125,10 @@ else {
 // Create / Edit issue
 if (isset($_POST["createissue"])){
 	
-	$id=sqlite_escape_string($_POST['id']);
-	$title=sqlite_escape_string($_POST['title']);
-	$description=sqlite_escape_string($_POST['description']);
-	$user=$_SESSION['tit']['username'];
+	$id=pdo_escape_string($_POST['id']);
+	$title=pdo_escape_string($_POST['title']);
+	$description=pdo_escape_string($_POST['description']);
+	$user=pdo_escape_string($_SESSION['tit']['username']);
 	$now=date("Y-m-d H:i:s");
 	
 	// gather all emails
@@ -142,12 +142,12 @@ if (isset($_POST["createissue"])){
 		$query = "INSERT INTO issues (title, description, user, priority, notify_emails, entrytime) values('$title','$description','$user','2','$notify_emails','$now')"; // create
 	else
 		$query = "UPDATE issues SET title='$title', description='$description' WHERE id='$id'"; // edit
-	
+
 	if (trim($title)!='') {     // title cant be blank
-		@sqlite_query($db, $query);
+		@$db->exec($query);
 		if ($id==''){
 			// created
-			$id=sqlite_last_insert_rowid($db);
+			$id=$db->lastInsertId();
 			if ($NOTIFY["ISSUE_CREATE"])
 				notify( $id,
 				        "[$TITLE] New Issue Created",
@@ -167,13 +167,13 @@ if (isset($_POST["createissue"])){
 
 // Delete issue
 if (isset($_GET["deleteissue"])){
-	$id=sqlite_escape_string($_GET['id']);
+	$id=pdo_escape_string($_GET['id']);
 	$title=get_col($id,"issues","title");
 	
 	// only the issue creator or admin can delete issue
 	if ($_SESSION['tit']['admin'] || $_SESSION['tit']['username']==get_col($id,"issues","user")){
-		@sqlite_query($db, "DELETE FROM issues WHERE id='$id'");
-		@sqlite_query($db, "DELETE FROM comments WHERE issue_id='$id'");
+		@$db->exec("DELETE FROM issues WHERE id='$id'");
+		@$db->exec("DELETE FROM comments WHERE issue_id='$id'");
 		
 		if ($NOTIFY["ISSUE_DELETE"])
 			notify( $id,
@@ -186,9 +186,9 @@ if (isset($_GET["deleteissue"])){
 
 // Change Priority
 if (isset($_GET["changepriority"])){
-	$id=sqlite_escape_string($_GET['id']);
-	$priority=sqlite_escape_string($_GET['priority']);
-	if ($priority>=1 && $priority<=3) @sqlite_query($db, "UPDATE issues SET priority='$priority' WHERE id='$id'");
+	$id=pdo_escape_string($_GET['id']);
+	$priority=pdo_escape_string($_GET['priority']);
+	if ($priority>=1 && $priority<=3) @$db->exec("UPDATE issues SET priority='$priority' WHERE id='$id'");
 	
 	if ($NOTIFY["ISSUE_PRIORITY"])
 		notify( $id,
@@ -200,9 +200,9 @@ if (isset($_GET["changepriority"])){
 
 // change status
 if (isset($_GET["changestatus"])){
-	$id=sqlite_escape_string($_GET['id']);
-	$status=sqlite_escape_string($_GET['status']);
-	@sqlite_query($db, "UPDATE issues SET status='$status' WHERE id='$id'");
+	$id=pdo_escape_string($_GET['id']);
+	$status=pdo_escape_string($_GET['status']);
+	@$db->exec("UPDATE issues SET status='$status' WHERE id='$id'");
 	
 	if ($NOTIFY["ISSUE_STATUS"])
 		notify( $id,
@@ -214,14 +214,14 @@ if (isset($_GET["changestatus"])){
 
 // Unwatch
 if (isset($_POST["unwatch"])){
-	$id=sqlite_escape_string($_POST['id']);
+	$id=pdo_escape_string($_POST['id']);
 	unwatch($id);       // remove from watch list
 	header("Location: {$_SERVER['PHP_SELF']}?id=$id");
 }
 
 // Watch
 if (isset($_POST["watch"])){
-	$id=sqlite_escape_string($_POST['id']);
+	$id=pdo_escape_string($_POST['id']);
 	watch($id);         // add to watch list
 	header("Location: {$_SERVER['PHP_SELF']}?id=$id");
 }
@@ -230,14 +230,14 @@ if (isset($_POST["watch"])){
 // Create Comment
 if (isset($_POST["createcomment"])){
 	
-	$issue_id=sqlite_escape_string($_POST['issue_id']);
-	$description=sqlite_escape_string($_POST['description']);
+	$issue_id=pdo_escape_string($_POST['issue_id']);
+	$description=pdo_escape_string($_POST['description']);
 	$user=$_SESSION['tit']['username'];
 	$now=date("Y-m-d H:i:s");
 	
 	if (trim($description)!=''){
 		$query = "INSERT INTO comments (issue_id, description, user, entrytime) values('$issue_id','$description','$user','$now')"; // create
-		sqlite_query($db, $query);
+		$db->exec($query);
 	}
 	
 	if ($NOTIFY["COMMENT_CREATE"])
@@ -251,12 +251,12 @@ if (isset($_POST["createcomment"])){
 
 // Delete Comment
 if (isset($_GET["deletecomment"])){
-	$id=sqlite_escape_string($_GET['id']);
-	$cid=sqlite_escape_string($_GET['cid']);
+	$id=pdo_escape_string($_GET['id']);
+	$cid=pdo_escape_string($_GET['cid']);
 	
 	// only comment poster or admin can delete comment
 	if ($_SESSION['tit']['admin'] || $_SESSION['tit']['username']==get_col($cid,"comments","user"))
-		sqlite_query($db, "DELETE FROM comments WHERE id='$cid'");
+		$db->exec("DELETE FROM comments WHERE id='$cid'");
 	
 	header("Location: {$_SERVER['PHP_SELF']}?id=$id");
 }
@@ -264,6 +264,13 @@ if (isset($_GET["deletecomment"])){
 //
 //      FUNCTIONS
 //
+
+// PDO quote, but without enclosing single-quote
+function pdo_escape_string($str){
+	global $db;
+	$quoted = $db->quote($str);
+	return ($db->quote("")=="''")?substr($quoted, 1, strlen($quoted)-2):$quoted;
+}
 
 // check credentials, returns -1 if not okay
 function check_credentials($u, $p){
@@ -280,14 +287,14 @@ function check_credentials($u, $p){
 // get column from some table with $id
 function get_col($id, $table, $col){
 	global $db;
-	$result = sqlite_array_query($db, "SELECT $col FROM $table WHERE id='$id'");
+	$result = $db->query("SELECT $col FROM $table WHERE id='$id'")->fetchAll();
 	return $result[0][$col];
 }
 
 // notify via email
 function notify($id, $subject, $body){
 	global $db;
-	$result = sqlite_array_query($db, "SELECT notify_emails FROM issues WHERE id='$id'");
+	$result = $db->query("SELECT notify_emails FROM issues WHERE id='$id'")->fetchAll();
 	$to = $result[0]['notify_emails'];
 	
 	if ($to!=''){
@@ -304,7 +311,7 @@ function watch($id){
 	global $db;
 	if ($_SESSION['tit']['email']=='') return;
 	
-	$result = sqlite_array_query($db, "SELECT notify_emails FROM issues WHERE id='$id'");
+	$result = $db->query("SELECT notify_emails FROM issues WHERE id='$id'")->fetchAll();
 	$notify_emails = $result[0]['notify_emails'];
 	
 	if ($notify_emails!=''){
@@ -314,7 +321,7 @@ function watch($id){
 		$emails = array_unique($emails);
 		$notify_emails = implode(",",$emails);
 		
-		sqlite_query($db, "UPDATE issues SET notify_emails='$notify_emails' WHERE id='$id'");
+		$db->exec("UPDATE issues SET notify_emails='$notify_emails' WHERE id='$id'");
 	}
 }
 
@@ -323,7 +330,7 @@ function unwatch($id){
 	global $db;
 	if ($_SESSION['tit']['email']=='') return;
 	
-	$result = sqlite_array_query($db, "SELECT notify_emails FROM issues WHERE id='$id'");
+	$result = $db->query("SELECT notify_emails FROM issues WHERE id='$id'")->fetchAll();
 	$notify_emails = $result[0]['notify_emails'];
 	
 	if ($notify_emails!=''){
@@ -335,7 +342,7 @@ function unwatch($id){
 		}
 		$notify_emails = implode(",",$final_email_list);
 		
-		sqlite_query($db, "UPDATE issues SET notify_emails='$notify_emails' WHERE id='$id'");
+		$db->exec("UPDATE issues SET notify_emails='$notify_emails' WHERE id='$id'");
 	}
 }
 
@@ -375,7 +382,7 @@ function unwatch($id){
 	<div id="menu">
 		<?php
 			foreach($STATUSES as $code=>$name) {
-				$style=$_GET[status]==$code?"style='font-weight:bold;'":""; 
+				$style=(isset($_GET[status]) && $_GET[status]==$code) || (isset($issue) && $issue['status']==$code)?"style='font-weight:bold;'":""; 
 				echo "<a href='{$_SERVER['PHP_SELF']}?status={$code}' alt='{$name} Issues' $style>{$name} Issues</a> | ";
 			}
 		?>
@@ -389,8 +396,8 @@ function unwatch($id){
 		<a href="#" onclick="document.getElementById('create').className='hide';" style="float: right;">[Close]</a>
 		<form method="POST">
 			<input type="hidden" name="id" value="<?php echo $issue['id']; ?>" />
-			<label>Title</label><input type="text" size="50" name="title" id="title" value="<?php echo stripslashes($issue['title']); ?>" />
-			<label>Description</label><textarea name="description" rows="5" cols="50"><?php echo stripslashes($issue['description']); ?></textarea>
+			<label>Title</label><input type="text" size="50" name="title" id="title" value="<?php echo htmlentities($issue['title']); ?>" />
+			<label>Description</label><textarea name="description" rows="5" cols="50"><?php echo htmlentities($issue['description']); ?></textarea>
 			<label></label><input type="submit" name="createissue" value="<?php echo ($issue['id']==''?"Create":"Edit"); ?>" />
 		</form>
 	</div>
@@ -443,16 +450,13 @@ function unwatch($id){
 				<option value="3"<?php echo ($issue['priority']==3?"selected":""); ?>>Low</option>
 				
 			</select>
-
 			Status <select name="priority" onchange="location='<?php echo $_SERVER['PHP_SELF']; ?>?changestatus&id=<?php echo $issue['id']; ?>&status='+this.value">
 			<? foreach($STATUSES as $code=>$name) { ?>
 				<option value="<?=$code?>"<?php echo ($issue['status']==$code?"selected":""); ?>><?=$name?></option>
 			<? } ?>
 			</select>
-
 		</div>
 		<div class='left'>
-
 			<form method="POST">
 				<input type="hidden" name="id" value="<?php echo $issue['id']; ?>" />
 				<?php
@@ -460,12 +464,10 @@ function unwatch($id){
 						echo "<input type='submit' name='watch' value='Watch' />\n";
 					else
 						echo "<input type='submit' name='unwatch' value='Unwatch' />\n";
-				
 				?>
 			</form>
 		</div>
 		<div class='clear'></div>
-		
 		<div id="comments">
 			<?php
 			if (count($comments)>0) echo "<h3>Comments</h3>\n";
