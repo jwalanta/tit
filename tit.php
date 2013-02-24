@@ -23,11 +23,12 @@ $USERS = array(
   array("username"=>"user" ,"password"=>md5("user") ,"email"=>"user@example.com"),
 );
 
-//  Location of SQLITE db file
-//  (If the file doesn't exist, a new one will be created.
-//  Make sure the folder is writable)
-
-$SQLITE = "tit.db";
+// PDO Connection string ()
+// eg, SQlite: sqlite:<filename>
+//     MySQL: mysql:dbname=<dbname>;host=<hostname>
+$DB_CONNECTION = "sqlite:tit.db";
+$DB_USERNAME = "";
+$DB_PASSWORD = "";
 
 // Select which notifications to send
 $NOTIFY["ISSUE_CREATE"]     = TRUE;     // issue created
@@ -81,11 +82,11 @@ $login_html = "<html><head><title>Tiny Issue Tracker</title><style>body,input{fo
 if (check_credentials($_SESSION['tit']['username'], $_SESSION['tit']['password'])==-1) die($login_html);
 
 // Check if db exists
-try{$db = new PDO("sqlite:$SQLITE");}
+try{$db = new PDO($DB_CONNECTION, $DB_USERNAME, $DB_PASSWORD);}
 catch (PDOException $e) {die("DB Connection failed.");}
 
 // create tables if not exist
-@$db->exec("CREATE TABLE issues (id INTEGER PRIMARY KEY, title TEXT, description TEXT, user TEXT, status INTEGER NOT NULL DEFAULT '0', priority INTEGER, notify_emails INTEGER, entrytime DATETIME)");
+@$db->exec("CREATE TABLE issues (id INTEGER PRIMARY KEY, title TEXT, description TEXT, user TEXT, status INTEGER NOT NULL DEFAULT '0', priority INTEGER, notify_emails TEXT, entrytime DATETIME)");
 @$db->exec("CREATE TABLE comments (id INTEGER PRIMARY KEY, issue_id INTEGER, user TEXT, description TEXT, entrytime DATETIME)");
 
 if (isset($_GET["id"])){
