@@ -451,9 +451,9 @@ function unwatch($id){
 				
 			</select>
 			Status <select name="priority" onchange="location='<?php echo $_SERVER['PHP_SELF']; ?>?changestatus&id=<?php echo $issue['id']; ?>&status='+this.value">
-			<? foreach($STATUSES as $code=>$name) { ?>
-				<option value="<?=$code?>"<?php echo ($issue['status']==$code?"selected":""); ?>><?=$name?></option>
-			<? } ?>
+			<?php foreach($STATUSES as $code=>$name): ?>
+				<option value="<?php echo $code; ?>"<?php echo ($issue['status']==$code?"selected":""); ?>><?php echo $name; ?></option>
+			<?php endforeach; ?>
 			</select>
 		</div>
 		<div class='left'>
