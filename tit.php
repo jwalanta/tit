@@ -3,7 +3,7 @@
  *      Tiny Issue Tracker (TIT) v0.1
  *      SQLite based, single file Issue Tracker
  *      
- *      Copyright 2010 Jwalanta Shrestha <jwalanta at gmail dot com>
+ *      Copyright 2010-2013 Jwalanta Shrestha <jwalanta at gmail dot com>
  *      GNU GPL
  */
 
@@ -13,7 +13,6 @@
 
 $TITLE = "My Project";              // Project Title
 $EMAIL = "noreply@example.com";     // "From" email address for notifications
-
 
 // Array of users.
 // Mandatory fields: username, password (md5 hash)
@@ -31,7 +30,6 @@ $USERS = array(
 $SQLITE = "tit.db";
 
 // Select which notifications to send
-
 $NOTIFY["ISSUE_CREATE"]     = TRUE;     // issue created
 $NOTIFY["ISSUE_EDIT"]       = TRUE;     // issue edited
 $NOTIFY["ISSUE_DELETE"]     = TRUE;     // issue deleted
@@ -39,18 +37,14 @@ $NOTIFY["ISSUE_STATUS"]     = TRUE;     // issue status change (solved / unsolve
 $NOTIFY["ISSUE_PRIORITY"]   = TRUE;     // issue status change (solved / unsolved)
 $NOTIFY["COMMENT_CREATE"]   = TRUE;     // comment post
 
-$STATUSES = array(
-  0 => "Open",
-  1 => "Testing",
-  2 => "Resolved",
-);
+// Modify this issue types
+$STATUSES = array(0 => "Active", 1 => "Resolved");
 
 ////////////////////////////////////////////////////////////////////////
 ////// DO NOT EDIT BEYOND THIS IF YOU DON'T KNOW WHAT YOU'RE DOING /////
 ////////////////////////////////////////////////////////////////////////
 
-if (get_magic_quotes_gpc())
-{
+if (get_magic_quotes_gpc()){
   foreach($_GET  as $k=>$v) $_GET [$k] = stripslashes($v);
   foreach($_POST as $k=>$v) $_POST[$k] = stripslashes($v);
 }
@@ -72,7 +66,6 @@ if (isset($_POST["login"])){
 // check for logout
 if (isset($_GET['logout'])){
 	$_SESSION['tit']=array();  // username
-	
 	header("Location: {$_SERVER['PHP_SELF']}");
 }
 
@@ -96,7 +89,6 @@ if (!($db = sqlite_open($SQLITE, 0666, $sqliteerror))) die($sqliteerror);
 
 if (isset($_GET["id"])){
 	// show issue #id
-	
 	$id=sqlite_escape_string($_GET['id']);
 	$issue = sqlite_array_query($db, "SELECT id, title, description, user, status, priority, notify_emails, entrytime FROM issues WHERE id='$id'");
 	$comments = sqlite_array_query($db, "SELECT id, user, description, entrytime FROM comments WHERE issue_id='$id' ORDER BY entrytime ASC");
@@ -114,7 +106,7 @@ if (count($issue)==0){
 	  $status = (int)$_GET["status"];
 
 	$issues = sqlite_array_query($db, 
-	  "SELECT id, title, description, user, status, priority, notify_emails, entrytime, comment_user, comment_time ".
+	  "SELECT id, title, description, user, status, priority, notify_emails, entrytime ".
 	  " FROM issues ".
 	  " WHERE status=".sqlite_escape_string($status ? $status : "0 or status is null"). // <- this is for legacy purposes only
 	  " ORDER BY priority, entrytime DESC");
@@ -169,9 +161,8 @@ if (isset($_POST["createissue"])){
 				        "Issue edited by {$user}\r\nTitle: $title\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$id");
 		}
 	}
-	
-	header("Location: {$_SERVER['PHP_SELF']}");
 
+	header("Location: {$_SERVER['PHP_SELF']}");
 }
 
 // Delete issue
@@ -382,10 +373,13 @@ function unwatch($id){
 <body>
 <div id='container'>
 	<div id="menu">
-<? foreach($STATUSES as $code=>$name) { ?>
-		<a href="<?php echo $_SERVER['PHP_SELF']; ?>?status=<?=$code?>" alt="<?=$name?> Issues"><?=$name?> Issues</a> |
-<? } ?>
-		<a href="<?php echo $_SERVER['PHP_SELF']; ?>?logout" alt="Logout">Logout [<?php echo $_SESSION['u']; ?>]</a>
+		<?php
+			foreach($STATUSES as $code=>$name) {
+				$style=$_GET[status]==$code?"style='font-weight:bold;'":""; 
+				echo "<a href='{$_SERVER['PHP_SELF']}?status={$code}' alt='{$name} Issues' $style>{$name} Issues</a> | ";
+			}
+		?>
+		<a href="<?php echo $_SERVER['PHP_SELF']; ?>?logout" alt="Logout">Logout [<?php echo $_SESSION['tit']['username']; ?>]</a>
 	</div>
 
 	<h1><?php echo $TITLE; ?></h1>
@@ -449,18 +443,20 @@ function unwatch($id){
 				<option value="3"<?php echo ($issue['priority']==3?"selected":""); ?>>Low</option>
 				
 			</select>
-		</div>
-		<div class='left'>
+
 			Status <select name="priority" onchange="location='<?php echo $_SERVER['PHP_SELF']; ?>?changestatus&id=<?php echo $issue['id']; ?>&status='+this.value">
 			<? foreach($STATUSES as $code=>$name) { ?>
 				<option value="<?=$code?>"<?php echo ($issue['status']==$code?"selected":""); ?>><?=$name?></option>
 			<? } ?>
 			</select>
 
+		</div>
+		<div class='left'>
+
 			<form method="POST">
 				<input type="hidden" name="id" value="<?php echo $issue['id']; ?>" />
 				<?php
-					if (strpos($issue['notify_emails'],$_SESSION['e'])===FALSE)
+					if (strpos($issue['notify_emails'],$_SESSION['tit']['email'])===FALSE)
 						echo "<input type='submit' name='watch' value='Watch' />\n";
 					else
 						echo "<input type='submit' name='unwatch' value='Unwatch' />\n";
