@@ -39,6 +39,11 @@ $NOTIFY["ISSUE_STATUS"]     = TRUE;     // issue status change (solved / unsolve
 $NOTIFY["ISSUE_PRIORITY"]   = TRUE;     // issue status change (solved / unsolved)
 $NOTIFY["COMMENT_CREATE"]   = TRUE;     // comment post
 
+$STATUSES = array(
+  0 => "Open",
+  1 => "Testing",
+  2 => "Resolved",
+);
 
 ////////////////////////////////////////////////////////////////////////
 ////// DO NOT EDIT BEYOND THIS IF YOU DON'T KNOW WHAT YOU'RE DOING /////
@@ -86,8 +91,8 @@ if (check_credentials($_SESSION['tit']['username'], $_SESSION['tit']['password']
 if (!($db = sqlite_open($SQLITE, 0666, $sqliteerror))) die($sqliteerror);
 
 // create tables if not exist
-@sqlite_query($db, 'CREATE TABLE issues (id INTEGER PRIMARY KEY, title TEXT, description TEXT, user TEXT, status INTEGER, priority INTEGER, notify_emails INTEGER, entrytime DATETIME)');
-@sqlite_query($db, 'CREATE TABLE comments (id INTEGER PRIMARY KEY, issue_id INTEGER, user TEXT, description TEXT, entrytime DATETIME)');
+@sqlite_query($db, "CREATE TABLE issues (id INTEGER PRIMARY KEY, title TEXT, description TEXT, user TEXT, status INTEGER NOT NULL DEFAULT '0', priority INTEGER, notify_emails INTEGER, entrytime DATETIME)");
+@sqlite_query($db, "CREATE TABLE comments (id INTEGER PRIMARY KEY, issue_id INTEGER, user TEXT, description TEXT, entrytime DATETIME)");
 
 if (isset($_GET["id"])){
 	// show issue #id
@@ -104,10 +109,15 @@ if (count($issue)==0){
 	unset($issue, $comments);
 	// show all issues
 	
-	if (isset($_GET["resolved"]))
-		$issues = sqlite_array_query($db, "SELECT id, title, description, user, status, priority, notify_emails, entrytime FROM issues WHERE status=1 ORDER BY priority, entrytime DESC");
-	else
-		$issues = sqlite_array_query($db, "SELECT id, title, description, user, status, priority, notify_emails, entrytime FROM issues WHERE (status=0 OR status IS NULL) ORDER BY priority, entrytime DESC");
+	$status = 0;
+	if (isset($_GET["status"]))
+	  $status = (int)$_GET["status"];
+
+	$issues = sqlite_array_query($db, 
+	  "SELECT id, title, description, user, status, priority, notify_emails, entrytime, comment_user, comment_time ".
+	  " FROM issues ".
+	  " WHERE status=".sqlite_escape_string($status ? $status : "0 or status is null"). // <- this is for legacy purposes only
+	  " ORDER BY priority, entrytime DESC");
 	
 	$mode="list";
 }
@@ -197,30 +207,18 @@ if (isset($_GET["changepriority"])){
 	header("Location: {$_SERVER['PHP_SELF']}?id=$id");
 }
 
-// Mark as solved
-if (isset($_POST["marksolved"])){
-	$id=sqlite_escape_string($_POST['id']);
-	@sqlite_query($db, "UPDATE issues SET status='1' WHERE id='$id'");
+// change status
+if (isset($_GET["changestatus"])){
+	$id=sqlite_escape_string($_GET['id']);
+	$status=sqlite_escape_string($_GET['status']);
+	@sqlite_query($db, "UPDATE issues SET status='$status' WHERE id='$id'");
 	
 	if ($NOTIFY["ISSUE_STATUS"])
 		notify( $id,
-		        "[$TITLE] Issue Marked as Solved",
-		        "Issue marked as solved by {$_SESSION['tit']['username']}\r\nTitle: ".get_col($id,"issues","title")."\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$id");
+		        "[$TITLE] Issue Marked as ".$STATUSES[$status],
+		        "Issue marked as {$STATUSES[$status]} by {$_SESSION['u']}\r\nTitle: ".get_col($id,"issues","title")."\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$id");
 	
-	header("Location: {$_SERVER['PHP_SELF']}");
-}
-
-// Mark as unsolved
-if (isset($_POST["markunsolved"])){
-	$id=sqlite_escape_string($_POST['id']);
-	@sqlite_query($db, "UPDATE issues SET status='0' WHERE id='$id'");
-	
-	if ($NOTIFY["ISSUE_STATUS"])
-		notify( $id,
-		        "[$TITLE] Issue Marked as Unsolved",
-		        "Issue marked as unsolved by {$_SESSION['tit']['username']}\r\nTitle: ".get_col($id,"issues","title")."\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$id");
-	
-	header("Location: {$_SERVER['PHP_SELF']}");
+	header("Location: {$_SERVER['PHP_SELF']}?id=$id");
 }
 
 // Unwatch
@@ -384,9 +382,10 @@ function unwatch($id){
 <body>
 <div id='container'>
 	<div id="menu">
-		<a href="<?php echo $_SERVER['PHP_SELF']; ?>" alt="Active Issues">Active Issues</a> |
-		<a href="<?php echo $_SERVER['PHP_SELF']; ?>?resolved" alt="Resolved Issues">Resolved Issues</a> |
-		<a href="<?php echo $_SERVER['PHP_SELF']; ?>?logout" alt="Logout">Logout [<?php echo $_SESSION['tit']['username']; ?>]</a>
+<? foreach($STATUSES as $code=>$name) { ?>
+		<a href="<?php echo $_SERVER['PHP_SELF']; ?>?status=<?=$code?>" alt="<?=$name?> Issues"><?=$name?> Issues</a> |
+<? } ?>
+		<a href="<?php echo $_SERVER['PHP_SELF']; ?>?logout" alt="Logout">Logout [<?php echo $_SESSION['u']; ?>]</a>
 	</div>
 
 	<h1><?php echo $TITLE; ?></h1>
@@ -404,7 +403,7 @@ function unwatch($id){
 	
 	<?php if ($mode=="list"): ?>
 	<div id="list">
-	<h2><?php if (isset($_GET['resolved'])) echo "Resolved "; ?>Issues</h2>
+	<h2><?php if (isset($STATUSES[$_GET['status']])) echo $STATUSES[$_GET['status']]." "; ?>Issues</h2>
 		<table border=1 cellpadding=5 width="100%">
 			<tr>
 				<th width="5%">ID</th>
@@ -424,7 +423,7 @@ function unwatch($id){
 				echo "<td><a href='?id={$issue['id']}'>".htmlentities($issue['title'],ENT_COMPAT,"UTF-8")."</a></td>\n";
 				echo "<td>{$issue['user']}</td>\n";
 				echo "<td>{$issue['entrytime']}</td>\n";
-				echo "<td>".(strpos($issue['notify_emails'],$_SESSION['tit']['email'])!==FALSE?"?":"")."</td>\n";
+				echo "<td>".(strpos($issue['notify_emails'],$_SESSION['tit']['email'])!==FALSE?"✔":"")."</td>\n";
 				echo "<td><a href='?editissue&id={$issue['id']}'>Edit</a>";
 				if ($_SESSION['tit']['admin'] || $_SESSION['tit']['username']==$issue['user']) echo " | <a href='?deleteissue&id={$issue['id']}' onclick='return confirm(\"Are you sure? All comments will be deleted too.\");'>Delete</a>";
 				echo "</td>\n";
@@ -452,11 +451,16 @@ function unwatch($id){
 			</select>
 		</div>
 		<div class='left'>
+			Status <select name="priority" onchange="location='<?php echo $_SERVER['PHP_SELF']; ?>?changestatus&id=<?php echo $issue['id']; ?>&status='+this.value">
+			<? foreach($STATUSES as $code=>$name) { ?>
+				<option value="<?=$code?>"<?php echo ($issue['status']==$code?"selected":""); ?>><?=$name?></option>
+			<? } ?>
+			</select>
+
 			<form method="POST">
 				<input type="hidden" name="id" value="<?php echo $issue['id']; ?>" />
-				<input type="submit" name="mark<?php echo $issue['status']==1?"unsolved":"solved"; ?>" value="Mark as <?php echo $issue['status']==1?"Unsolved":"Solved"; ?>" />
 				<?php
-					if (strpos($issue['notify_emails'],$_SESSION['tit']['email'])===FALSE)
+					if (strpos($issue['notify_emails'],$_SESSION['e'])===FALSE)
 						echo "<input type='submit' name='watch' value='Watch' />\n";
 					else
 						echo "<input type='submit' name='unwatch' value='Unwatch' />\n";
