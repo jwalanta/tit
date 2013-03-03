@@ -425,7 +425,7 @@ function unwatch($id){
 				echo "<td><a href='?id={$issue['id']}'>".htmlentities($issue['title'],ENT_COMPAT,"UTF-8")."</a></td>\n";
 				echo "<td>{$issue['user']}</td>\n";
 				echo "<td>{$issue['entrytime']}</td>\n";
-				echo "<td>".(strpos($issue['notify_emails'],$_SESSION['tit']['email'])!==FALSE?"✔":"")."</td>\n";
+				echo "<td>".(strpos($issue['notify_emails'],$_SESSION['tit']['email'])!==FALSE?"&#10003;":"")."</td>\n";
 				echo "<td><a href='?editissue&id={$issue['id']}'>Edit</a>";
 				if ($_SESSION['tit']['admin'] || $_SESSION['tit']['username']==$issue['user']) echo " | <a href='?deleteissue&id={$issue['id']}' onclick='return confirm(\"Are you sure? All comments will be deleted too.\");'>Delete</a>";
 				echo "</td>\n";
