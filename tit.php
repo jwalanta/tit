@@ -412,7 +412,7 @@ function unwatch($id){
 				<th width="40%">Title</th>
 				<th width="15%">Created by</th>
 				<th width="20%">Date</th>
-				<th width="5%%">Watch</th>
+				<th width="5%">Watch</th>
 				<th width="15%">Actions</th>
 			</tr>
 		
