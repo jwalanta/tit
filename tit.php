@@ -24,7 +24,7 @@ $USERS = array(
 );
 
 // PDO Connection string ()
-// eg, SQlite: sqlite:<filename>
+// eg, SQlite: sqlite:<filename> (Warning: if you're upgrading from an earlier version of TIT, you have to use "sqlite2"!)
 //     MySQL: mysql:dbname=<dbname>;host=<hostname>
 $DB_CONNECTION = "sqlite:tit.db";
 $DB_USERNAME = "";
