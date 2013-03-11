@@ -107,10 +107,11 @@ if (count($issue)==0){
 	  $status = (int)$_GET["status"];
 
 	$issues = $db->query(
-	  "SELECT id, title, description, user, status, priority, notify_emails, entrytime ".
+	  "SELECT id, title, description, user, status, priority, notify_emails, entrytime, comment_user, comment_time ".
 	  " FROM issues ".
+	  " LEFT JOIN (SELECT user AS comment_user, entrytime AS comment_time, issue_id FROM comments ORDER BY entrytime DESC) AS c ON c.issue_id = issues.id".
 	  " WHERE status=".pdo_escape_string($status ? $status : "0 or status is null"). // <- this is for legacy purposes only
-	  " ORDER BY priority, entrytime DESC")->fetchAll();
+	  " GROUP BY id ORDER BY priority, entrytime DESC")->fetchAll();
 	
 	$mode="list";
 }
@@ -388,12 +389,13 @@ function setWatch($id,$addToWatch){
 	<h2><?php if (isset($STATUSES[$_GET['status']])) echo $STATUSES[$_GET['status']]." "; ?>Issues</h2>
 		<table border=1 cellpadding=5 width="100%">
 			<tr>
-				<th width="5%">ID</th>
-				<th width="40%">Title</th>
-				<th width="15%">Created by</th>
-				<th width="20%">Date</th>
-				<th width="5%">Watch</th>
-				<th width="15%">Actions</th>
+				<th>ID</th>
+				<th>Title</th>
+				<th>Created by</th>
+				<th>Date</th>
+				<th><acronym title="Watching issue?">W</acronym></th>
+				<th>Last Comment</th>
+				<th>Actions</th>
 			</tr>
 		
 			<?php
@@ -406,6 +408,7 @@ function setWatch($id,$addToWatch){
 				echo "<td>{$issue['user']}</td>\n";
 				echo "<td>{$issue['entrytime']}</td>\n";
 				echo "<td>".(strpos($issue['notify_emails'],$_SESSION['tit']['email'])!==FALSE?"&#10003;":"")."</td>\n";
+				echo "<td>".($issue['comment_user'] ? date("M j",strtotime($issue['comment_time'])) . " (" . $issue['comment_user'] . ")" : "")."</td>\n";
 				echo "<td><a href='?editissue&id={$issue['id']}'>Edit</a>";
 				if ($_SESSION['tit']['admin'] || $_SESSION['tit']['username']==$issue['user']) echo " | <a href='?deleteissue&id={$issue['id']}' onclick='return confirm(\"Are you sure? All comments will be deleted too.\");'>Delete</a>";
 				echo "</td>\n";
