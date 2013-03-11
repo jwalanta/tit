@@ -1,7 +1,7 @@
 Tiny Issue Tracker
 ------------------
 
-Tiny Issue Tracker (TIT) is PHP/SQLite based, one-file issue tracker.
+Tiny Issue Tracker (TIT) is PHP/PDO based, single-file issue tracker.
 
 DEMO
 ----
