@@ -216,14 +216,14 @@ if (isset($_GET["changestatus"])){
 // Unwatch
 if (isset($_POST["unwatch"])){
 	$id=pdo_escape_string($_POST['id']);
-	unwatch($id);       // remove from watch list
+	setWatch($id,false);       // remove from watch list
 	header("Location: {$_SERVER['PHP_SELF']}?id=$id");
 }
 
 // Watch
 if (isset($_POST["watch"])){
 	$id=pdo_escape_string($_POST['id']);
-	watch($id);         // add to watch list
+	setWatch($id,true);         // add to watch list
 	header("Location: {$_SERVER['PHP_SELF']}?id=$id");
 }
 
@@ -307,44 +307,25 @@ function notify($id, $subject, $body){
 	
 }
 
-// start watching an issue
-function watch($id){
-	global $db;
-	if ($_SESSION['tit']['email']=='') return;
-	
-	$result = $db->query("SELECT notify_emails FROM issues WHERE id='$id'")->fetchAll();
-	$notify_emails = $result[0]['notify_emails'];
-	
-	if ($notify_emails!=''){
-		$emails = explode(",",$notify_emails);
-		$emails[] = $_SESSION['tit']['email'];
-		
-		$emails = array_unique($emails);
-		$notify_emails = implode(",",$emails);
-		
-		$db->exec("UPDATE issues SET notify_emails='$notify_emails' WHERE id='$id'");
-	}
-}
+// start/stop watching an issue
+function watchFilterCallback($email) { return $email != $_SESSION['tit']['email']; }
 
-// unwatch an issue
-function unwatch($id){
+function setWatch($id,$addToWatch){
 	global $db;
 	if ($_SESSION['tit']['email']=='') return;
 	
 	$result = $db->query("SELECT notify_emails FROM issues WHERE id='$id'")->fetchAll();
 	$notify_emails = $result[0]['notify_emails'];
 	
-	if ($notify_emails!=''){
-		$emails = explode(",",$notify_emails);
-		
-		$final_email_list=array();
-		foreach ($emails as $email){
-			if ($email!=$_SESSION['tit']['email'] && $email!='') $final_email_list[] = $email;
-		}
-		$notify_emails = implode(",",$final_email_list);
-		
-		$db->exec("UPDATE issues SET notify_emails='$notify_emails' WHERE id='$id'");
-	}
+	$emails = $notify_emails ? explode(",",$notify_emails) : array();
+
+	if ($addToWatch) $emails[] = $_SESSION['tit']['email'];
+  else $emails = array_filter( $emails, "watchFilterCallback" );
+	$emails = array_unique($emails);
+  
+	$notify_emails = implode(",",$emails);
+
+	$db->exec("UPDATE issues SET notify_emails='$notify_emails' WHERE id='$id'");
 }
 
 ?>
@@ -375,7 +356,6 @@ function unwatch($id){
 		.left{float: left;}
 		.right{float: right;}
 		.clear{clear:both;}
-		
 	</style>
 </head>
 <body>
@@ -442,7 +422,7 @@ function unwatch($id){
 	<div id="show">
 		<div class="issue">
 			<h2><?php echo htmlentities($issue['title'],ENT_COMPAT,"UTF-8"); ?></h2>
-			<p><?php echo str_replace("\n","<br />",htmlentities($issue['description'],ENT_COMPAT,"UTF-8")); ?></p>
+			<p><?php echo nl2br( preg_replace("/([a-z]+:\/\/\S+)/","<a href='$1'>$1</a>", htmlentities($issue['description'],ENT_COMPAT,"UTF-8") ) ); ?></p>
 		</div>
 		<div class='left'>
 			Priority <select name="priority" onchange="location='<?php echo $_SERVER['PHP_SELF']; ?>?changepriority&id=<?php echo $issue['id']; ?>&priority='+this.value">
@@ -473,7 +453,7 @@ function unwatch($id){
 			<?php
 			if (count($comments)>0) echo "<h3>Comments</h3>\n";
 			foreach ($comments as $comment){
-				echo "<div class='comment'><p>".str_replace("\n","<br />",htmlentities($comment['description'],ENT_COMPAT,"UTF-8"))."</p>";
+				echo "<div class='comment'><p>".nl2br( preg_replace("/([a-z]+:\/\/\S+)/","<a href='$1'>$1</a>",htmlentities($comment['description'],ENT_COMPAT,"UTF-8") ) )."</p>";
 				echo "<div class='comment-meta'><em>{$comment['user']}</em> on <em>{$comment['entrytime']}</em> ";
 				if ($_SESSION['tit']['admin'] || $_SESSION['tit']['username']==$comment['user']) echo "<span class='right'><a href='{$_SERVER['PHP_SELF']}?deletecomment&id={$issue['id']}&cid={$comment['id']}' onclick='return confirm(\"Are you sure?\");'>Delete</a></span>";
 				echo "</div></div>\n";
