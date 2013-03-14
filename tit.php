@@ -444,7 +444,7 @@ function setWatch($id,$addToWatch){
 			<form method="POST">
 				<input type="hidden" name="id" value="<?php echo $issue['id']; ?>" />
 				<?php
-					if (strpos($issue['notify_emails'],$_SESSION['tit']['email'])===FALSE)
+					if ($_SESSION['tit']['email']&&strpos($issue['notify_emails'],$_SESSION['tit']['email'])===FALSE)
 						echo "<input type='submit' name='watch' value='Watch' />\n";
 					else
 						echo "<input type='submit' name='unwatch' value='Unwatch' />\n";
