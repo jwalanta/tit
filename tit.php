@@ -388,7 +388,6 @@ function setWatch($id,$addToWatch){
 					<option selected value="2">Medium</option>
 					<option value="3">Low</option>
 				</select>
-                <?php echo htmlentities($issue['priority']); ?>
 		</form>
 	</div>
 	
