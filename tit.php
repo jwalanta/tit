@@ -338,6 +338,7 @@ function setWatch($id,$addToWatch){
 	<title><?php echo $TITLE, " - Issue Tracker"; ?></title>
 	<meta http-equiv="content-type" content="text/html;charset=utf-8" />
 	<style>
+		html { overflow-y: scroll;}
 		body { font-family: sans-serif; font-size: 11px; background-color: #aaa;}
 		a, a:visited{color:#004989; text-decoration:none;}
 		a:hover{color: #666; text-decoration: underline;}
