@@ -130,6 +130,7 @@ if (isset($_POST["createissue"])){
 	$id=pdo_escape_string($_POST['id']);
 	$title=pdo_escape_string($_POST['title']);
 	$description=pdo_escape_string($_POST['description']);
+	$priority=pdo_escape_string($_POST['priority']);
 	$user=pdo_escape_string($_SESSION['tit']['username']);
 	$now=date("Y-m-d H:i:s");
 	
@@ -141,7 +142,7 @@ if (isset($_POST["createissue"])){
 	$notify_emails = implode(",",$emails);
 	
 	if ($id=='')
-		$query = "INSERT INTO issues (title, description, user, priority, notify_emails, entrytime) values('$title','$description','$user','2','$notify_emails','$now')"; // create
+		$query = "INSERT INTO issues (title, description, user, priority, notify_emails, entrytime) values('$title','$description','$user','$priority','$notify_emails','$now')"; // create
 	else
 		$query = "UPDATE issues SET title='$title', description='$description' WHERE id='$id'"; // edit
 
@@ -337,6 +338,7 @@ function setWatch($id,$addToWatch){
 	<title><?php echo $TITLE, " - Issue Tracker"; ?></title>
 	<meta http-equiv="content-type" content="text/html;charset=utf-8" />
 	<style>
+		html { overflow-y: scroll;}
 		body { font-family: sans-serif; font-size: 11px; background-color: #aaa;}
 		a, a:visited{color:#004989; text-decoration:none;}
 		a:hover{color: #666; text-decoration: underline;}
@@ -381,6 +383,12 @@ function setWatch($id,$addToWatch){
 			<label>Title</label><input type="text" size="50" name="title" id="title" value="<?php echo htmlentities($issue['title']); ?>" />
 			<label>Description</label><textarea name="description" rows="5" cols="50"><?php echo htmlentities($issue['description']); ?></textarea>
 			<label></label><input type="submit" name="createissue" value="<?php echo ($issue['id']==''?"Create":"Edit"); ?>" />
+			Priority
+				<select name="priority">
+					<option value="1">High</option>
+					<option selected value="2">Medium</option>
+					<option value="3">Low</option>
+				</select>
 		</form>
 	</div>
 	
