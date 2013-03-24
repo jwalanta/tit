@@ -83,7 +83,7 @@ if (check_credentials($_SESSION['tit']['username'], $_SESSION['tit']['password']
 
 // Check if db exists
 try{$db = new PDO($DB_CONNECTION, $DB_USERNAME, $DB_PASSWORD);}
-catch (PDOException $e) {die("DB Connection failed.");}
+catch (PDOException $e) {die("DB Connection failed: ".$e->getMessage());}
 
 // create tables if not exist
 @$db->exec("CREATE TABLE issues (id INTEGER PRIMARY KEY, title TEXT, description TEXT, user TEXT, status INTEGER NOT NULL DEFAULT '0', priority INTEGER, notify_emails TEXT, entrytime DATETIME)");
