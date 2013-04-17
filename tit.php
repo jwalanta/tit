@@ -11,36 +11,38 @@
 // CONFIGURATION //
 ///////////////////
 
-$TITLE = "My Project";              // Project Title
-$EMAIL = "noreply@example.com";     // "From" email address for notifications
-
-// Array of users.
-// Mandatory fields: username, password (md5 hash)
-// Optional fields: email, admin (true/false)
-
-$USERS = array(
-  array("username"=>"admin","password"=>md5("admin"),"email"=>"admin@example.com","admin"=>true),
-  array("username"=>"user" ,"password"=>md5("user") ,"email"=>"user@example.com"),
-);
-
-// PDO Connection string ()
-// eg, SQlite: sqlite:<filename> (Warning: if you're upgrading from an earlier version of TIT, you have to use "sqlite2"!)
-//     MySQL: mysql:dbname=<dbname>;host=<hostname>
-$DB_CONNECTION = "sqlite:tit.db";
-$DB_USERNAME = "";
-$DB_PASSWORD = "";
-
-// Select which notifications to send
-$NOTIFY["ISSUE_CREATE"]     = TRUE;     // issue created
-$NOTIFY["ISSUE_EDIT"]       = TRUE;     // issue edited
-$NOTIFY["ISSUE_DELETE"]     = TRUE;     // issue deleted
-$NOTIFY["ISSUE_STATUS"]     = TRUE;     // issue status change (solved / unsolved)
-$NOTIFY["ISSUE_PRIORITY"]   = TRUE;     // issue status change (solved / unsolved)
-$NOTIFY["COMMENT_CREATE"]   = TRUE;     // comment post
-
-// Modify this issue types
-$STATUSES = array(0 => "Active", 1 => "Resolved");
-
+if (!defined("TIT_INCLUSION"))
+{
+  $TITLE = "My Project";              // Project Title
+  $EMAIL = "noreply@example.com";     // "From" email address for notifications
+  
+  // Array of users.
+  // Mandatory fields: username, password (md5 hash)
+  // Optional fields: email, admin (true/false)
+  
+  $USERS = array(
+    array("username"=>"admin","password"=>md5("admin"),"email"=>"admin@example.com","admin"=>true),
+    array("username"=>"user" ,"password"=>md5("user") ,"email"=>"user@example.com"),
+  );
+  
+  // PDO Connection string ()
+  // eg, SQlite: sqlite:<filename> (Warning: if you're upgrading from an earlier version of TIT, you have to use "sqlite2"!)
+  //     MySQL: mysql:dbname=<dbname>;host=<hostname>
+  $DB_CONNECTION = "sqlite:tit.db";
+  $DB_USERNAME = "";
+  $DB_PASSWORD = "";
+  
+  // Select which notifications to send
+  $NOTIFY["ISSUE_CREATE"]     = TRUE;     // issue created
+  $NOTIFY["ISSUE_EDIT"]       = TRUE;     // issue edited
+  $NOTIFY["ISSUE_DELETE"]     = TRUE;     // issue deleted
+  $NOTIFY["ISSUE_STATUS"]     = TRUE;     // issue status change (solved / unsolved)
+  $NOTIFY["ISSUE_PRIORITY"]   = TRUE;     // issue status change (solved / unsolved)
+  $NOTIFY["COMMENT_CREATE"]   = TRUE;     // comment post
+  
+  // Modify this issue types
+  $STATUSES = array(0 => "Active", 1 => "Resolved");
+}
 ////////////////////////////////////////////////////////////////////////
 ////// DO NOT EDIT BEYOND THIS IF YOU DON'T KNOW WHAT YOU'RE DOING /////
 ////////////////////////////////////////////////////////////////////////
