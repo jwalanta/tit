@@ -111,9 +111,10 @@ if (count($issue)==0){
 	$issues = $db->query(
 	  "SELECT id, title, description, user, status, priority, notify_emails, entrytime, comment_user, comment_time ".
 	  " FROM issues ".
-	  " LEFT JOIN (SELECT user AS comment_user, entrytime AS comment_time, issue_id FROM comments ORDER BY entrytime DESC) AS c ON c.issue_id = issues.id".
+	  " LEFT JOIN (SELECT max(entrytime) as max_comment_time, issue_id FROM comments GROUP BY issue_id) AS cmax ON cmax.issue_id = issues.id".
+	  " LEFT JOIN (SELECT user AS comment_user, entrytime AS comment_time, issue_id FROM comments ORDER BY issue_id DESC, entrytime DESC) AS c ON c.issue_id = issues.id AND cmax.max_comment_time = c.comment_time".
 	  " WHERE status=".pdo_escape_string($status ? $status : "0 or status is null"). // <- this is for legacy purposes only
-	  " GROUP BY id ORDER BY priority, entrytime DESC")->fetchAll();
+	  " ORDER BY priority, entrytime DESC")->fetchAll();
 	
 	$mode="list";
 }
