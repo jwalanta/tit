@@ -2,7 +2,7 @@
 /*
  *      Tiny Issue Tracker (TIT) v2.0
  *      SQLite based, single file Issue Tracker
- *      
+ *
  *      Copyright 2010-2013 Jwalanta Shrestha <jwalanta at gmail dot com>
  *      GNU GPL
  */
@@ -13,43 +13,43 @@
 
 if (!defined("TIT_INCLUSION"))
 {
-  $TITLE = "My Project";              // Project Title
-  $EMAIL = "noreply@example.com";     // "From" email address for notifications
-  
-  // Array of users.
-  // Mandatory fields: username, password (md5 hash)
-  // Optional fields: email, admin (true/false)
-  
-  $USERS = array(
-    array("username"=>"admin","password"=>md5("admin"),"email"=>"admin@example.com","admin"=>true),
-    array("username"=>"user" ,"password"=>md5("user") ,"email"=>"user@example.com"),
-  );
-  
-  // PDO Connection string ()
-  // eg, SQlite: sqlite:<filename> (Warning: if you're upgrading from an earlier version of TIT, you have to use "sqlite2"!)
-  //     MySQL: mysql:dbname=<dbname>;host=<hostname>
-  $DB_CONNECTION = "sqlite:tit.db";
-  $DB_USERNAME = "";
-  $DB_PASSWORD = "";
-  
-  // Select which notifications to send
-  $NOTIFY["ISSUE_CREATE"]     = TRUE;     // issue created
-  $NOTIFY["ISSUE_EDIT"]       = TRUE;     // issue edited
-  $NOTIFY["ISSUE_DELETE"]     = TRUE;     // issue deleted
-  $NOTIFY["ISSUE_STATUS"]     = TRUE;     // issue status change (solved / unsolved)
-  $NOTIFY["ISSUE_PRIORITY"]   = TRUE;     // issue status change (solved / unsolved)
-  $NOTIFY["COMMENT_CREATE"]   = TRUE;     // comment post
-  
-  // Modify this issue types
-  $STATUSES = array(0 => "Active", 1 => "Resolved");
+	$TITLE = "My Project";              // Project Title
+	$EMAIL = "noreply@example.com";     // "From" email address for notifications
+
+	// Array of users.
+	// Mandatory fields: username, password (md5 hash)
+	// Optional fields: email, admin (true/false)
+
+	$USERS = array(
+		array("username"=>"admin","password"=>md5("admin"),"email"=>"admin@example.com","admin"=>true),
+		array("username"=>"user" ,"password"=>md5("user") ,"email"=>"user@example.com"),
+	);
+
+	// PDO Connection string ()
+	// eg, SQlite: sqlite:<filename> (Warning: if you're upgrading from an earlier version of TIT, you have to use "sqlite2"!)
+	//     MySQL: mysql:dbname=<dbname>;host=<hostname>
+	$DB_CONNECTION = "sqlite:tit.db";
+	$DB_USERNAME = "";
+	$DB_PASSWORD = "";
+
+	// Select which notifications to send
+	$NOTIFY["ISSUE_CREATE"]     = TRUE;     // issue created
+	$NOTIFY["ISSUE_EDIT"]       = TRUE;     // issue edited
+	$NOTIFY["ISSUE_DELETE"]     = TRUE;     // issue deleted
+	$NOTIFY["ISSUE_STATUS"]     = TRUE;     // issue status change (solved / unsolved)
+	$NOTIFY["ISSUE_PRIORITY"]   = TRUE;     // issue status change (solved / unsolved)
+	$NOTIFY["COMMENT_CREATE"]   = TRUE;     // comment post
+
+	// Modify this issue types
+	$STATUSES = array(0 => "Active", 1 => "Resolved");
 }
 ////////////////////////////////////////////////////////////////////////
 ////// DO NOT EDIT BEYOND THIS IF YOU DON'T KNOW WHAT YOU'RE DOING /////
 ////////////////////////////////////////////////////////////////////////
 
 if (get_magic_quotes_gpc()){
-  foreach($_GET  as $k=>$v) $_GET [$k] = stripslashes($v);
-  foreach($_POST as $k=>$v) $_POST[$k] = stripslashes($v);
+	foreach($_GET  as $k=>$v) $_GET [$k] = stripslashes($v);
+	foreach($_POST as $k=>$v) $_POST[$k] = stripslashes($v);
 }
 
 // Here we go...
@@ -60,7 +60,7 @@ if (isset($_POST["login"])){
 	$n = check_credentials($_POST["u"],md5($_POST["p"]));
 	if ($n>=0){
 		$_SESSION['tit']=$USERS[$n];
-		
+
 		header("Location: {$_SERVER['PHP_SELF']}");
 	}
 	else header("Location: {$_SERVER['PHP_SELF']}?loginerror");
@@ -74,11 +74,11 @@ if (isset($_GET['logout'])){
 
 if (isset($_GET['loginerror'])) $message = "Invalid username or password";
 $login_html = "<html><head><title>Tiny Issue Tracker</title><style>body,input{font-family:sans-serif;font-size:11px;} label{display:block;}</style></head>
-               <body><h2>$TITLE - Issue Tracker</h2><p>$message</p><form method='POST'>
-               <label>Username</label><input type='text' name='u' />
-               <label>Password</label><input type='password' name='p' />
-               <label></label><input type='submit' name='login' value='Login' />
-               </form></body></html>";
+							 <body><h2>$TITLE - Issue Tracker</h2><p>$message</p><form method='POST'>
+							 <label>Username</label><input type='text' name='u' />
+							 <label>Password</label><input type='password' name='p' />
+							 <label></label><input type='submit' name='login' value='Login' />
+							 </form></body></html>";
 
 // show login page on bad credential
 if (check_credentials($_SESSION['tit']['username'], $_SESSION['tit']['password'])==-1) die($login_html);
@@ -100,22 +100,22 @@ if (isset($_GET["id"])){
 
 // if no issue found, go to list mode
 if (count($issue)==0){
-	
+
 	unset($issue, $comments);
 	// show all issues
-	
+
 	$status = 0;
 	if (isset($_GET["status"]))
-	  $status = (int)$_GET["status"];
+		$status = (int)$_GET["status"];
 
 	$issues = $db->query(
-	  "SELECT id, title, description, user, status, priority, notify_emails, entrytime, comment_user, comment_time ".
-	  " FROM issues ".
-	  " LEFT JOIN (SELECT max(entrytime) as max_comment_time, issue_id FROM comments GROUP BY issue_id) AS cmax ON cmax.issue_id = issues.id".
-	  " LEFT JOIN (SELECT user AS comment_user, entrytime AS comment_time, issue_id FROM comments ORDER BY issue_id DESC, entrytime DESC) AS c ON c.issue_id = issues.id AND cmax.max_comment_time = c.comment_time".
-	  " WHERE status=".pdo_escape_string($status ? $status : "0 or status is null"). // <- this is for legacy purposes only
-	  " ORDER BY priority, entrytime DESC")->fetchAll();
-	
+		"SELECT id, title, description, user, status, priority, notify_emails, entrytime, comment_user, comment_time ".
+		" FROM issues ".
+		" LEFT JOIN (SELECT max(entrytime) as max_comment_time, issue_id FROM comments GROUP BY issue_id) AS cmax ON cmax.issue_id = issues.id".
+		" LEFT JOIN (SELECT user AS comment_user, entrytime AS comment_time, issue_id FROM comments ORDER BY issue_id DESC, entrytime DESC) AS c ON c.issue_id = issues.id AND cmax.max_comment_time = c.comment_time".
+		" WHERE status=".pdo_escape_string($status ? $status : "0 or status is null"). // <- this is for legacy purposes only
+		" ORDER BY priority, entrytime DESC")->fetchAll();
+
 	$mode="list";
 }
 else {
@@ -129,21 +129,21 @@ else {
 
 // Create / Edit issue
 if (isset($_POST["createissue"])){
-	
+
 	$id=pdo_escape_string($_POST['id']);
 	$title=pdo_escape_string($_POST['title']);
 	$description=pdo_escape_string($_POST['description']);
 	$priority=pdo_escape_string($_POST['priority']);
 	$user=pdo_escape_string($_SESSION['tit']['username']);
 	$now=date("Y-m-d H:i:s");
-	
+
 	// gather all emails
 	$emails=array();
 	for ($i=0;$i<count($USERS);$i++){
 		if ($USERS[$i]["email"]!='') $emails[] = $USERS[$i]["email"];
 	}
 	$notify_emails = implode(",",$emails);
-	
+
 	if ($id=='')
 		$query = "INSERT INTO issues (title, description, user, priority, notify_emails, entrytime) values('$title','$description','$user','$priority','$notify_emails','$now')"; // create
 	else
@@ -156,15 +156,15 @@ if (isset($_POST["createissue"])){
 			$id=$db->lastInsertId();
 			if ($NOTIFY["ISSUE_CREATE"])
 				notify( $id,
-				        "[$TITLE] New Issue Created",
-				        "New Issue Created by {$user}\r\nTitle: $title\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$id");
+								"[$TITLE] New Issue Created",
+								"New Issue Created by {$user}\r\nTitle: $title\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$id");
 		}
 		else{
 			// edited
 			if ($NOTIFY["ISSUE_EDIT"])
 				notify( $id,
-				        "[$TITLE] Issue Edited",
-				        "Issue edited by {$user}\r\nTitle: $title\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$id");
+								"[$TITLE] Issue Edited",
+								"Issue edited by {$user}\r\nTitle: $title\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$id");
 		}
 	}
 
@@ -175,19 +175,19 @@ if (isset($_POST["createissue"])){
 if (isset($_GET["deleteissue"])){
 	$id=pdo_escape_string($_GET['id']);
 	$title=get_col($id,"issues","title");
-	
+
 	// only the issue creator or admin can delete issue
 	if ($_SESSION['tit']['admin'] || $_SESSION['tit']['username']==get_col($id,"issues","user")){
 		@$db->exec("DELETE FROM issues WHERE id='$id'");
 		@$db->exec("DELETE FROM comments WHERE issue_id='$id'");
-		
+
 		if ($NOTIFY["ISSUE_DELETE"])
 			notify( $id,
-			        "[$TITLE] Issue Deleted",
-			        "Issue deleted by {$_SESSION['tit']['username']}\r\nTitle: $title");
+							"[$TITLE] Issue Deleted",
+							"Issue deleted by {$_SESSION['tit']['username']}\r\nTitle: $title");
 	}
 	header("Location: {$_SERVER['PHP_SELF']}");
-	
+
 }
 
 // Change Priority
@@ -195,12 +195,12 @@ if (isset($_GET["changepriority"])){
 	$id=pdo_escape_string($_GET['id']);
 	$priority=pdo_escape_string($_GET['priority']);
 	if ($priority>=1 && $priority<=3) @$db->exec("UPDATE issues SET priority='$priority' WHERE id='$id'");
-	
+
 	if ($NOTIFY["ISSUE_PRIORITY"])
 		notify( $id,
-		        "[$TITLE] Issue Priority Changed",
-		        "Issue Priority changed by {$_SESSION['tit']['username']}\r\nTitle: ".get_col($id,"issues","title")."\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$id");
-	
+						"[$TITLE] Issue Priority Changed",
+						"Issue Priority changed by {$_SESSION['tit']['username']}\r\nTitle: ".get_col($id,"issues","title")."\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$id");
+
 	header("Location: {$_SERVER['PHP_SELF']}?id=$id");
 }
 
@@ -209,12 +209,12 @@ if (isset($_GET["changestatus"])){
 	$id=pdo_escape_string($_GET['id']);
 	$status=pdo_escape_string($_GET['status']);
 	@$db->exec("UPDATE issues SET status='$status' WHERE id='$id'");
-	
+
 	if ($NOTIFY["ISSUE_STATUS"])
 		notify( $id,
-		        "[$TITLE] Issue Marked as ".$STATUSES[$status],
-		        "Issue marked as {$STATUSES[$status]} by {$_SESSION['u']}\r\nTitle: ".get_col($id,"issues","title")."\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$id");
-	
+						"[$TITLE] Issue Marked as ".$STATUSES[$status],
+						"Issue marked as {$STATUSES[$status]} by {$_SESSION['u']}\r\nTitle: ".get_col($id,"issues","title")."\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$id");
+
 	header("Location: {$_SERVER['PHP_SELF']}?id=$id");
 }
 
@@ -235,35 +235,35 @@ if (isset($_POST["watch"])){
 
 // Create Comment
 if (isset($_POST["createcomment"])){
-	
+
 	$issue_id=pdo_escape_string($_POST['issue_id']);
 	$description=pdo_escape_string($_POST['description']);
 	$user=$_SESSION['tit']['username'];
 	$now=date("Y-m-d H:i:s");
-	
+
 	if (trim($description)!=''){
 		$query = "INSERT INTO comments (issue_id, description, user, entrytime) values('$issue_id','$description','$user','$now')"; // create
 		$db->exec($query);
 	}
-	
+
 	if ($NOTIFY["COMMENT_CREATE"])
 		notify( $id,
-		        "[$TITLE] New Comment Posted",
-		        "New comment posted by {$user}\r\nTitle: ".get_col($id,"issues","title")."\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$issue_id");
-	
+						"[$TITLE] New Comment Posted",
+						"New comment posted by {$user}\r\nTitle: ".get_col($id,"issues","title")."\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$issue_id");
+
 	header("Location: {$_SERVER['PHP_SELF']}?id=$issue_id");
-	
+
 }
 
 // Delete Comment
 if (isset($_GET["deletecomment"])){
 	$id=pdo_escape_string($_GET['id']);
 	$cid=pdo_escape_string($_GET['cid']);
-	
+
 	// only comment poster or admin can delete comment
 	if ($_SESSION['tit']['admin'] || $_SESSION['tit']['username']==get_col($cid,"comments","user"))
 		$db->exec("DELETE FROM comments WHERE id='$cid'");
-	
+
 	header("Location: {$_SERVER['PHP_SELF']}?id=$id");
 }
 
@@ -281,7 +281,7 @@ function pdo_escape_string($str){
 // check credentials, returns -1 if not okay
 function check_credentials($u, $p){
 	global $USERS;
-	
+
 	$n=0;
 	foreach ($USERS as $user){
 		if (strcasecmp($user['username'],$u)===0 && $user['password']==$p) return $n;
@@ -302,14 +302,14 @@ function notify($id, $subject, $body){
 	global $db;
 	$result = $db->query("SELECT notify_emails FROM issues WHERE id='$id'")->fetchAll();
 	$to = $result[0]['notify_emails'];
-	
+
 	if ($to!=''){
 		global $EMAIL;
 		$headers = "From: $EMAIL" . "\r\n" . 'X-Mailer: PHP/' . phpversion();
-		
+
 		mail($to, $subject, $body, $headers);       // standard php mail, hope it passes spam filter :)
 	}
-	
+
 }
 
 // start/stop watching an issue
@@ -318,16 +318,16 @@ function watchFilterCallback($email) { return $email != $_SESSION['tit']['email'
 function setWatch($id,$addToWatch){
 	global $db;
 	if ($_SESSION['tit']['email']=='') return;
-	
+
 	$result = $db->query("SELECT notify_emails FROM issues WHERE id='$id'")->fetchAll();
 	$notify_emails = $result[0]['notify_emails'];
-	
+
 	$emails = $notify_emails ? explode(",",$notify_emails) : array();
 
 	if ($addToWatch) $emails[] = $_SESSION['tit']['email'];
-  else $emails = array_filter( $emails, "watchFilterCallback" );
+	else $emails = array_filter( $emails, "watchFilterCallback" );
 	$emails = array_unique($emails);
-  
+
 	$notify_emails = implode(",",$emails);
 
 	$db->exec("UPDATE issues SET notify_emails='$notify_emails' WHERE id='$id'");
@@ -335,7 +335,7 @@ function setWatch($id,$addToWatch){
 
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 	<title><?php echo $TITLE, isset($_GET["id"]) ? (" - #".$_GET["id"]) : "" , " - Issue Tracker"; ?></title>
@@ -369,7 +369,7 @@ function setWatch($id,$addToWatch){
 	<div id="menu">
 		<?php
 			foreach($STATUSES as $code=>$name) {
-				$style=(isset($_GET[status]) && $_GET[status]==$code) || (isset($issue) && $issue['status']==$code)?"style='font-weight:bold;'":""; 
+				$style=(isset($_GET[status]) && $_GET[status]==$code) || (isset($issue) && $issue['status']==$code)?"style='font-weight:bold;'":"";
 				echo "<a href='{$_SERVER['PHP_SELF']}?status={$code}' alt='{$name} Issues' $style>{$name} Issues</a> | ";
 			}
 		?>
@@ -394,7 +394,7 @@ function setWatch($id,$addToWatch){
 				</select>
 		</form>
 	</div>
-	
+
 	<?php if ($mode=="list"): ?>
 	<div id="list">
 	<h2><?php if (isset($STATUSES[$_GET['status']])) echo $STATUSES[$_GET['status']]." "; ?>Issues</h2>
@@ -408,7 +408,7 @@ function setWatch($id,$addToWatch){
 				<th>Last Comment</th>
 				<th>Actions</th>
 			</tr>
-		
+
 			<?php
 			$count=1;
 			foreach ($issues as $issue){
@@ -425,13 +425,13 @@ function setWatch($id,$addToWatch){
 				echo "</td>\n";
 				echo "</tr>\n";
 			}
-			
+
 			?>
-		
+
 		</table>
 	</div>
 	<?php endif; ?>
-	
+
 	<?php if ($mode=="issue"): ?>
 	<div id="show">
 		<div class="issue">
@@ -443,7 +443,7 @@ function setWatch($id,$addToWatch){
 				<option value="1"<?php echo ($issue['priority']==1?"selected":""); ?>>High</option>
 				<option value="2"<?php echo ($issue['priority']==2?"selected":""); ?>>Medium</option>
 				<option value="3"<?php echo ($issue['priority']==3?"selected":""); ?>>Low</option>
-				
+
 			</select>
 			Status <select name="priority" onchange="location='<?php echo $_SERVER['PHP_SELF']; ?>?changestatus&id=<?php echo $issue['id']; ?>&status='+this.value">
 			<?php foreach($STATUSES as $code=>$name): ?>
