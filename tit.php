@@ -338,7 +338,7 @@ function setWatch($id,$addToWatch){
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
-	<title><?php echo $TITLE, " - Issue Tracker"; ?></title>
+	<title><?php echo $TITLE, isset($_GET["id"]) ? (" - #".$_GET["id"]) : "" , " - Issue Tracker"; ?></title>
 	<meta http-equiv="content-type" content="text/html;charset=utf-8" />
 	<style>
 		html { overflow-y: scroll;}
