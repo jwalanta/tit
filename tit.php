@@ -386,12 +386,14 @@ function setWatch($id,$addToWatch){
 			<label>Title</label><input type="text" size="50" name="title" id="title" value="<?php echo htmlentities($issue['title']); ?>" />
 			<label>Description</label><textarea name="description" rows="5" cols="50"><?php echo htmlentities($issue['description']); ?></textarea>
 			<label></label><input type="submit" name="createissue" value="<?php echo ($issue['id']==''?"Create":"Edit"); ?>" />
+<? if (!$issue['id']) { ?>
 			Priority
 				<select name="priority">
 					<option value="1">High</option>
 					<option selected value="2">Medium</option>
 					<option value="3">Low</option>
 				</select>
+<? } ?>
 		</form>
 	</div>
 
@@ -408,7 +410,6 @@ function setWatch($id,$addToWatch){
 				<th>Last Comment</th>
 				<th>Actions</th>
 			</tr>
-
 			<?php
 			$count=1;
 			foreach ($issues as $issue){
@@ -425,9 +426,7 @@ function setWatch($id,$addToWatch){
 				echo "</td>\n";
 				echo "</tr>\n";
 			}
-
 			?>
-
 		</table>
 	</div>
 	<?php endif; ?>
@@ -443,7 +442,6 @@ function setWatch($id,$addToWatch){
 				<option value="1"<?php echo ($issue['priority']==1?"selected":""); ?>>High</option>
 				<option value="2"<?php echo ($issue['priority']==2?"selected":""); ?>>Medium</option>
 				<option value="3"<?php echo ($issue['priority']==3?"selected":""); ?>>Low</option>
-
 			</select>
 			Status <select name="priority" onchange="location='<?php echo $_SERVER['PHP_SELF']; ?>?changestatus&id=<?php echo $issue['id']; ?>&status='+this.value">
 			<?php foreach($STATUSES as $code=>$name): ?>
