@@ -5,7 +5,7 @@ Tiny Issue Tracker (TIT) is PHP/PDO based, single-file issue tracker.
 
 DEMO
 ----
-http://diyaalo.com/tit
+http://jwalanta.com/tit
 username, password = demo, demo123
 Check email notifications at http://demo123.mailinator.com/
 
