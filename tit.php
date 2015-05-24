@@ -465,8 +465,8 @@ function setWatch($id,$addToWatch){
 			<?php
 			if (count($comments)>0) echo "<h3>Comments</h3>\n";
 			foreach ($comments as $comment){
-				echo "<div class='comment'><p>".nl2br( preg_replace("/([a-z]+:\/\/\S+)/","<a href='$1'>$1</a>",htmlentities($comment['description'],ENT_COMPAT,"UTF-8") ) )."</p>";
-				echo "<div class='comment-meta'><em>{$comment['user']}</em> on <em>{$comment['entrytime']}</em> ";
+				echo "<div class='comment' id='c".$comment['id']."'><p>".nl2br( preg_replace("/([a-z]+:\/\/\S+)/","<a href='$1'>$1</a>",htmlentities($comment['description'],ENT_COMPAT,"UTF-8") ) )."</p>";
+				echo "<div class='comment-meta'><em>{$comment['user']}</em> on <em><a href='#c".$comment['id']."'>{$comment['entrytime']}</a></em> ";
 				if ($_SESSION['tit']['admin'] || $_SESSION['tit']['username']==$comment['user']) echo "<span class='right'><a href='{$_SERVER['PHP_SELF']}?deletecomment&id={$issue['id']}&cid={$comment['id']}' onclick='return confirm(\"Are you sure?\");'>Delete</a></span>";
 				echo "</div></div>\n";
 			}
