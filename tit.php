@@ -355,6 +355,7 @@ function setWatch($id,$addToWatch){
 		#create{padding: 15px; background-color: #f2f2f2;}
 		.issue{padding:10px 20px; margin: 10px 0; background-color: #f2f2f2;}
 		.comment{padding:5px 10px 10px 10px; margin: 10px 0; border: 1px solid #ccc;}
+		.comment:target{outline: 2px solid #444;}
 		.comment-meta{color: #666;}
 		.p1, .p1 a{color: red;}
 		.p3, .p3 a{color: #666;}
