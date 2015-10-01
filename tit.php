@@ -56,25 +56,25 @@ if (get_magic_quotes_gpc()){
 session_start();
 
 // check for login post
+$message = "";
 if (isset($_POST["login"])){
 	$n = check_credentials($_POST["u"],md5($_POST["p"]));
 	if ($n>=0){
 		$_SESSION['tit']=$USERS[$n];
 
-		header("Location: {$_SERVER['PHP_SELF']}");
+		header("Location: ".$_SERVER["REQUEST_URI"]);
 	}
-	else header("Location: {$_SERVER['PHP_SELF']}?loginerror");
+	else $message = "Invalid username or password";
 }
 
 // check for logout
 if (isset($_GET['logout'])){
 	$_SESSION['tit']=array();  // username
-	header("Location: {$_SERVER['PHP_SELF']}");
+	header("Location: ".$_SERVER["REQUEST_URI"]);
 }
 
-if (isset($_GET['loginerror'])) $message = "Invalid username or password";
 $login_html = "<html><head><title>Tiny Issue Tracker</title><style>body,input{font-family:sans-serif;font-size:11px;} label{display:block;}</style></head>
-							 <body><h2>$TITLE - Issue Tracker</h2><p>$message</p><form method='POST'>
+							 <body><h2>$TITLE - Issue Tracker</h2><p>$message</p><form method='POST' action='".$_SERVER["REQUEST_URI"]."'>
 							 <label>Username</label><input type='text' name='u' />
 							 <label>Password</label><input type='password' name='p' />
 							 <label></label><input type='submit' name='login' value='Login' />
