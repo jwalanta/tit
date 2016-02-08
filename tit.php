@@ -23,6 +23,7 @@ if (!defined("TIT_INCLUSION"))
 	$USERS = array(
 		array("username"=>"admin","password"=>md5("admin"),"email"=>"admin@example.com","admin"=>true),
 		array("username"=>"user" ,"password"=>md5("user") ,"email"=>"user@example.com"),
+		array("username"=>"user2" ,"password"=>md5("user2") ,"email"=>"user2@example.com"),
 	);
 
 	// PDO Connection string ()
@@ -37,6 +38,7 @@ if (!defined("TIT_INCLUSION"))
 	$NOTIFY["ISSUE_EDIT"]       = TRUE;     // issue edited
 	$NOTIFY["ISSUE_DELETE"]     = TRUE;     // issue deleted
 	$NOTIFY["ISSUE_STATUS"]     = TRUE;     // issue status change (solved / unsolved)
+	$NOTIFY["ISSUE_ASSIGNMENT"] = TRUE;     // issue assigned to an other user
 	$NOTIFY["ISSUE_PRIORITY"]   = TRUE;     // issue status change (solved / unsolved)
 	$NOTIFY["COMMENT_CREATE"]   = TRUE;     // comment post
 
@@ -88,13 +90,27 @@ try{$db = new PDO($DB_CONNECTION, $DB_USERNAME, $DB_PASSWORD);}
 catch (PDOException $e) {die("DB Connection failed: ".$e->getMessage());}
 
 // create tables if not exist
-@$db->exec("CREATE TABLE issues (id INTEGER PRIMARY KEY, title TEXT, description TEXT, user TEXT, status INTEGER NOT NULL DEFAULT '0', priority INTEGER, notify_emails TEXT, entrytime DATETIME)");
+@$db->exec("CREATE TABLE issues (id INTEGER PRIMARY KEY, title TEXT, description TEXT, user TEXT, assigned_user TEXT, status INTEGER NOT NULL DEFAULT '0', priority INTEGER, notify_emails TEXT, entrytime DATETIME)");
 @$db->exec("CREATE TABLE comments (id INTEGER PRIMARY KEY, issue_id INTEGER, user TEXT, description TEXT, entrytime DATETIME)");
+
+// db migration
+// create col assigned_user in issues, if missing
+$issuesCols = $db->query("PRAGMA table_info('issues')")->fetchAll();
+$issuesHasAssignedUser = false;
+foreach ($issuesCols as $col) {
+   if ($col['name'] === 'assigned_user') {
+      $issuesHasAssignedUser = true;
+   }
+}
+if (!$issuesHasAssignedUser) {
+   $db->query("ALTER TABLE issues ADD COLUMN assigned_user TEXT");
+   $db->query("UPDATE issues SET assigned_user = user");
+}
 
 if (isset($_GET["id"])){
 	// show issue #id
 	$id=pdo_escape_string($_GET['id']);
-	$issue = $db->query("SELECT id, title, description, user, status, priority, notify_emails, entrytime FROM issues WHERE id='$id'")->fetchAll();
+	$issue = $db->query("SELECT id, title, description, user, assigned_user, status, priority, notify_emails, entrytime FROM issues WHERE id='$id'")->fetchAll();
 	$comments = $db->query("SELECT id, user, description, entrytime FROM comments WHERE issue_id='$id' ORDER BY entrytime ASC")->fetchAll();
 }
 
@@ -109,7 +125,7 @@ if (count($issue)==0){
 		$status = (int)$_GET["status"];
 
 	$issues = $db->query(
-		"SELECT id, title, description, user, status, priority, notify_emails, entrytime, comment_user, comment_time ".
+		"SELECT id, title, description, user, assigned_user, status, priority, notify_emails, entrytime, comment_user, comment_time ".
 		" FROM issues ".
 		" LEFT JOIN (SELECT max(entrytime) as max_comment_time, issue_id FROM comments GROUP BY issue_id) AS cmax ON cmax.issue_id = issues.id".
 		" LEFT JOIN (SELECT user AS comment_user, entrytime AS comment_time, issue_id FROM comments ORDER BY issue_id DESC, entrytime DESC) AS c ON c.issue_id = issues.id AND cmax.max_comment_time = c.comment_time".
@@ -145,7 +161,7 @@ if (isset($_POST["createissue"])){
 	$notify_emails = implode(",",$emails);
 
 	if ($id=='')
-		$query = "INSERT INTO issues (title, description, user, priority, notify_emails, entrytime) values('$title','$description','$user','$priority','$notify_emails','$now')"; // create
+		$query = "INSERT INTO issues (title, description, user, assigned_user, priority, notify_emails, entrytime) values('$title','$description','$user','$user','$priority','$notify_emails','$now')"; // create
 	else
 		$query = "UPDATE issues SET title='$title', description='$description' WHERE id='$id'"; // edit
 
@@ -214,6 +230,20 @@ if (isset($_GET["changestatus"])){
 		notify( $id,
 						"[$TITLE] Issue Marked as ".$STATUSES[$status],
 						"Issue marked as {$STATUSES[$status]} by {$_SESSION['u']}\r\nTitle: ".get_col($id,"issues","title")."\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$id");
+
+	header("Location: {$_SERVER['PHP_SELF']}?id=$id");
+}
+
+// change assignment
+if (isset($_GET["changeassignment"])){
+	$id=pdo_escape_string($_GET['id']);
+	$assigned_user=pdo_escape_string($_GET['assigned_user']);
+	@$db->exec("UPDATE issues SET assigned_user='$assigned_user' WHERE id='$id'");
+
+	if ($NOTIFY["ISSUE_ASSIGNMENT"])
+		notify( $id,
+						"[$TITLE] Issue assigned to ".$assigned_user,
+						"Issue assigned to $assigned_user by {$_SESSION['u']}\r\nTitle: ".get_col($id,"issues","title")."\r\nURL: http://{$_SERVER['HTTP_HOST']}{$_SERVER['PHP_SELF']}?id=$id");
 
 	header("Location: {$_SERVER['PHP_SELF']}?id=$id");
 }
@@ -405,6 +435,7 @@ function setWatch($id,$addToWatch){
 			<tr>
 				<th>ID</th>
 				<th>Title</th>
+				<th>Assigned to</th>
 				<th>Created by</th>
 				<th>Date</th>
 				<th><acronym title="Watching issue?">W</acronym></th>
@@ -418,6 +449,7 @@ function setWatch($id,$addToWatch){
 				echo "<tr class='p{$issue['priority']}'>\n";
 				echo "<td>{$issue['id']}</a></td>\n";
 				echo "<td><a href='?id={$issue['id']}'>".htmlentities($issue['title'],ENT_COMPAT,"UTF-8")."</a></td>\n";
+				echo "<td>{$issue['assigned_user']}</td>\n";
 				echo "<td>{$issue['user']}</td>\n";
 				echo "<td>{$issue['entrytime']}</td>\n";
 				echo "<td>".($_SESSION['tit']['email']&&strpos($issue['notify_emails'],$_SESSION['tit']['email'])!==FALSE?"&#10003;":"")."</td>\n";
@@ -444,11 +476,20 @@ function setWatch($id,$addToWatch){
 				<option value="2"<?php echo ($issue['priority']==2?"selected":""); ?>>Medium</option>
 				<option value="3"<?php echo ($issue['priority']==3?"selected":""); ?>>Low</option>
 			</select>
-			Status <select name="priority" onchange="location='<?php echo $_SERVER['PHP_SELF']; ?>?changestatus&id=<?php echo $issue['id']; ?>&status='+this.value">
+			&nbsp;&nbsp;
+			Status <select name="status" onchange="location='<?php echo $_SERVER['PHP_SELF']; ?>?changestatus&id=<?php echo $issue['id']; ?>&status='+this.value">
 			<?php foreach($STATUSES as $code=>$name): ?>
 				<option value="<?php echo $code; ?>"<?php echo ($issue['status']==$code?"selected":""); ?>><?php echo $name; ?></option>
 			<?php endforeach; ?>
 			</select>
+			&nbsp;&nbsp;
+			Assigned to <select name="assignment" onchange="location='<?php echo $_SERVER['PHP_SELF']; ?>?changeassignment&id=<?php echo $issue['id']; ?>&assigned_user='+this.value">
+			        <option value=""<?php echo (!$issue['assigned_user']?"selected":""); ?>>-</option>
+			<?php foreach($USERS as $user): ?>
+				<option value="<?php echo $user['username']; ?>"<?php echo ($issue['assigned_user']==$user['username']?"selected":""); ?>><?php echo $user['username']; ?></option>
+			<?php endforeach; ?>
+			</select>
+			&nbsp;&nbsp;
 		</div>
 		<div class='left'>
 			<form method="POST">
